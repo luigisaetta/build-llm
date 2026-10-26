@@ -42,6 +42,18 @@ If you want the full story behind every concept, read the book.
 * **Small and runnable**: the target is a model that you can train and run on
   a laptop (CPU, Apple Silicon MPS, or a single CUDA GPU).
 
+## Target platform
+
+The code is written to be portable: it runs on macOS, Linux, and Windows, on
+CPU or on a CUDA GPU.
+
+The reference environment, where the code is developed, tested, and
+optimized, is a **MacBook with Apple Silicon**. When it is available, the
+code uses PyTorch's
+[MPS backend](https://pytorch.org/docs/stable/notes/mps.html) (Metal
+Performance Shaders) for GPU acceleration. It falls back to CUDA or CPU on
+other machines.
+
 ## Roadmap
 
 The checklist below tracks the planned stages. Items are checked only when

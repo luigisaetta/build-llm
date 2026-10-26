@@ -51,8 +51,25 @@ Description: Brief description of this file's responsibilities.
   numerical tricks). Do not add comments that merely restate the code.
 * Document tensor shapes in docstrings or comments, for example
   `(batch_size, num_tokens, emb_dim)`.
-* Make code device-agnostic (CPU, MPS, CUDA). Do not hard-code devices,
-  machine-specific paths, or credentials.
+* Do not hard-code devices, machine-specific paths, or credentials.
+
+## Portability and target platform
+
+* Code must be portable across macOS, Linux, and Windows, and across CPU,
+  CUDA, and MPS devices.
+* The reference environment, where the code is developed, tested, and
+  optimized, is a MacBook with Apple Silicon.
+* Use PyTorch's MPS backend when it is available
+  (`torch.backends.mps.is_available()`); otherwise fall back to CUDA, then
+  CPU. Select the device in one place and pass it explicitly; never assume
+  that a specific device exists.
+* When an operation is not supported on MPS, or behaves differently there,
+  handle it explicitly (for example with a documented CPU fallback) and
+  explain why in a comment.
+* Do not add mandatory macOS-only dependencies. Optimizations specific to
+  Apple Silicon must not break the code on other platforms.
+* Tests must pass on CPU. Tests that require MPS or CUDA are skipped
+  automatically when the device is not available.
 * Keep notebooks focused and restartable from a clean kernel; move reusable
   logic into the package.
 
