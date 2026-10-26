@@ -1,0 +1,23 @@
+[project]
+name = "build-llm"
+version = "0.1.0"
+description = "Build, train, and evaluate a small GPT-style LLM from scratch in Python and PyTorch."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "L. Saetta" }]
+
+[tool.black]
+line-length = 88
+target-version = ["py311"]
+
+[tool.pylint.main]
+py-version = "3.11"
+
+[tool.pylint.format]
+max-line-length = 88
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-ra"

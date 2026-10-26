@@ -1,0 +1,95 @@
+# AGENTS.md
+
+Rules for humans and coding agents working on this repository.
+
+## Repository purpose
+
+This repository builds, step by step, all the tools needed to create, train,
+and evaluate a small GPT-style Large Language Model in Python and PyTorch. It
+is inspired by the book "Build a Large Language Model (From Scratch)" by
+Sebastian Raschka. The goal is learning: code must be easy to read,
+understand, and run.
+
+## Language
+
+* Write all documentation, comments, docstrings, notebook narrative cells,
+  CLI help, log messages, and program output in English.
+* Conversation with the user may follow the user's language.
+
+## Python environment
+
+* Python 3.11 or later.
+* The Conda environment is `build-llm`. Activate it with
+  `conda activate build-llm`, or use `conda run -n build-llm ...`.
+* Do not silently fall back to globally installed packages. If the
+  environment is unavailable, report which checks could not run.
+* Keep runtime dependencies in `requirements.txt` and development tools in
+  `requirements-dev.txt`. When you add a dependency, install it in the
+  `build-llm` environment as well.
+* Add dependencies only when they serve a clear need of the project.
+
+## Code conventions
+
+Every Python source file must begin with this module header, using the actual
+modification date:
+
+```python
+"""
+Author: L. Saetta
+Date last modified: YYYY-MM-DD
+License: MIT
+Description: Brief description of this file's responsibilities.
+"""
+```
+
+* Put reusable code in the `build_llm` package, and tests in `tests/`.
+* Prefer readable names, small functions, explicit control flow, and type
+  hints.
+* Use Google-style docstrings for public functions and classes, including
+  arguments, return values, and raised exceptions.
+* Explain non-obvious decisions (for example tensor shapes, masking, and
+  numerical tricks). Do not add comments that merely restate the code.
+* Document tensor shapes in docstrings or comments, for example
+  `(batch_size, num_tokens, emb_dim)`.
+* Make code device-agnostic (CPU, MPS, CUDA). Do not hard-code devices,
+  machine-specific paths, or credentials.
+* Keep notebooks focused and restartable from a clean kernel; move reusable
+  logic into the package.
+
+## Formatting, linting, and testing
+
+Before considering a change complete, run all three checks in the `build-llm`
+environment and make them pass:
+
+1. Format with Black, always: `black .`
+2. Lint with Pylint: `pylint build_llm tests`
+3. Test with pytest: `pytest`
+
+Testing rules:
+
+* Every building block gets proportionate `pytest` tests: expected outputs,
+  tensor shapes, edge cases, and failure paths.
+* Tests must be fast and deterministic: fix random seeds and use tiny model
+  configurations.
+* Tests must not download data or model weights. Keep network-dependent
+  tests explicit, opt-in, and excluded from the default run.
+
+Tool configuration lives in `pyproject.toml`.
+
+## Data, models, and artifacts
+
+* Keep datasets, downloaded weights, checkpoints, and generated artifacts out
+  of version control.
+* Document where data comes from and its license.
+
+## Working rules
+
+* Inspect the existing code and documentation before editing.
+* Prefer small, coherent, reviewable changes over broad rewrites.
+* Preserve user changes; never discard work or run destructive operations
+  without explicit authorization.
+* Do not create commits unless explicitly asked.
+* Do not add AI tools or assistants as authors, co-authors, or contributors
+  in files, commit messages, or pull requests.
+* Keep `README.md` focused on purpose, setup, and usage, and keep it aligned
+  with the implementation (for example the roadmap checklist).
