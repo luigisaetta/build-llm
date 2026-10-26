@@ -1,6 +1,6 @@
 """
 Author: L. Saetta
-Date last modified: 2026-10-26
+Date Last Modified: 2026-10-26
 License: MIT
 Description: Smoke tests for the build_llm package.
 """

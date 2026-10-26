@@ -1,3 +1,4 @@
 # Runtime dependencies of build-llm.
 torch>=2.2
+numpy>=1.26
 tiktoken>=0.7

@@ -105,6 +105,14 @@ From the repository root, install the runtime and development dependencies:
 pip install -r requirements.txt -r requirements-dev.txt
 ```
 
+Check that the environment is ready (see [Chapter 0](chap0/README.md)):
+
+```bash
+python -m chap0.check_environment
+```
+
+All the scripts run from the repository root as modules, with `python -m`.
+
 ### Development checks
 
 Format the code:
@@ -116,7 +124,7 @@ black .
 Lint the code:
 
 ```bash
-pylint build_llm tests
+pylint build_llm chap* tests
 ```
 
 Run the tests:
@@ -129,7 +137,8 @@ pytest
 
 ```text
 build-llm/
-├── build_llm/            # Python package with the LLM building blocks
+├── build_llm/            # Reusable package with the LLM building blocks
+├── chap0/                # Chapter 0: check of the development environment
 ├── tests/                # pytest test suite
 ├── AGENTS.md             # Rules for contributors and coding agents
 ├── pyproject.toml        # Project metadata and tool configuration

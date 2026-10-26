@@ -28,21 +28,48 @@ understand, and run.
   `build-llm` environment as well.
 * Add dependencies only when they serve a clear need of the project.
 
+## Repository layout
+
+* `build_llm/`: the package with reusable code, shared by all chapters.
+* `chapN/` (`chap0/`, `chap1/`, ...): one folder per chapter, with a
+  `README.md`, an `__init__.py`, and the chapter scripts. Chapter scripts
+  import reusable code from `build_llm`; they never import from other
+  chapters. When logic is useful beyond one chapter, move it to `build_llm`.
+* `tests/`: the pytest test suite.
+
+## Running scripts
+
+Every Python script must run from the repository root as a module, with
+`python -m`, for example:
+
+```bash
+python -m chap0.check_environment
+```
+
+Scripts define a `main()` function, call it under
+`if __name__ == "__main__":`, and return a meaningful exit code. Do not
+modify `sys.path` and do not rely on the current working directory: locate
+repository files relative to `__file__`.
+
 ## Code conventions
 
-Every Python source file must begin with this module header, using the actual
-modification date:
+Clarity and readability for a human reader come first: this is a learning
+project. Prefer the simple, explicit solution over the clever or the
+shortest one.
+
+Every Python file must begin with this module header, using the actual
+modification date. An executable script may place its shebang before the
+header. `tests/test_headers.py` enforces it.
 
 ```python
 """
 Author: L. Saetta
-Date last modified: YYYY-MM-DD
+Date Last Modified: YYYY-MM-DD
 License: MIT
 Description: Brief description of this file's responsibilities.
 """
 ```
 
-* Put reusable code in the `build_llm` package, and tests in `tests/`.
 * Prefer readable names, small functions, explicit control flow, and type
   hints.
 * Use Google-style docstrings for public functions and classes, including
@@ -79,7 +106,7 @@ Before considering a change complete, run all three checks in the `build-llm`
 environment and make them pass:
 
 1. Format with Black, always: `black .`
-2. Lint with Pylint: `pylint build_llm tests`
+2. Lint with Pylint: `pylint build_llm chap* tests`
 3. Test with pytest: `pytest`
 
 Testing rules:
