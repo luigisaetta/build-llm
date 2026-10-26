@@ -56,22 +56,23 @@ other machines.
 
 ## Roadmap
 
-The checklist below tracks the planned stages. Items are checked only when
-they are implemented and tested.
+The list below tracks the planned stages: ✅ implemented and tested,
+🚧 in progress, ⬜ planned.
 
-- [ ] **Text data and tokenization**: from raw text to token IDs; a simple
-  tokenizer and Byte Pair Encoding (BPE).
-- [ ] **Data pipeline**: sliding-window datasets and data loaders for
+- ✅ **Text data and tokenization**: from raw text to token IDs with Byte
+  Pair Encoding (BPE) and tiktoken, and the Tokenizer explorer demo
+  ([Chapter 1](chap1/README.md)).
+- ⬜ **Data pipeline**: sliding-window datasets and data loaders for
   next-token prediction.
-- [ ] **Embeddings**: token and positional embeddings.
-- [ ] **Attention**: self-attention, causal masking, multi-head attention.
-- [ ] **GPT architecture**: layer normalization, feed-forward blocks,
+- ⬜ **Embeddings**: token and positional embeddings.
+- ⬜ **Attention**: self-attention, causal masking, multi-head attention.
+- ⬜ **GPT architecture**: layer normalization, feed-forward blocks,
   transformer blocks, the full GPT model.
-- [ ] **Text generation**: greedy decoding, temperature, top-k sampling.
-- [ ] **Pre-training**: loss computation, training loop, checkpoints.
-- [ ] **Evaluation**: training and validation loss, perplexity.
-- [ ] **Loading pretrained weights**: load public GPT-2 weights into our model.
-- [ ] **Fine-tuning**: classification fine-tuning and instruction fine-tuning.
+- ⬜ **Text generation**: greedy decoding, temperature, top-k sampling.
+- ⬜ **Pre-training**: loss computation, training loop, checkpoints.
+- ⬜ **Evaluation**: training and validation loss, perplexity.
+- ⬜ **Loading pretrained weights**: load public GPT-2 weights into our model.
+- ⬜ **Fine-tuning**: classification fine-tuning and instruction fine-tuning.
 
 ## Chapters
 
