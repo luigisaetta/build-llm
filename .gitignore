@@ -14,7 +14,9 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
+# Keep this Python packaging directory scoped to the repository root so that
+# chapter UI source folders named lib remain visible to Git.
+/lib/
 lib64/
 parts/
 sdist/
