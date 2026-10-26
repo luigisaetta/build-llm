@@ -2,3 +2,6 @@
 torch>=2.2
 numpy>=1.26
 tiktoken>=0.7
+# Chapter 1 demo backend: HTTP API served to the web UI.
+fastapi>=0.110
+uvicorn>=0.29

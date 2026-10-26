@@ -115,10 +115,28 @@ Testing rules:
   tensor shapes, edge cases, and failure paths.
 * Tests must be fast and deterministic: fix random seeds and use tiny model
   configurations.
-* Tests must not download data or model weights. Keep network-dependent
-  tests explicit, opt-in, and excluded from the default run.
+* Tests must not download data or model weights. Mark network-dependent
+  tests with `@pytest.mark.network`: they are excluded from the default run,
+  and run with `pytest -m network`.
 
 Tool configuration lives in `pyproject.toml`.
+
+## Web UIs of the demos
+
+Some chapters have a web UI for their demo, in `chapN/ui/`.
+
+* Use Next.js (App Router) with TypeScript and Tailwind CSS.
+* The Python backend holds all the logic; the UI only displays it. The
+  browser calls the routes of the Next.js app (`app/api/`), which forward the
+  requests to the Python backend (FastAPI). Configure the backend address with
+  the `BACKEND_URL` environment variable.
+* Every Python backend must also be usable from the command line, through a
+  `python -m` script that reuses the same `build_llm` code.
+* Keep components small and readable, like the Python code.
+* Before considering a UI change complete, run in `chapN/ui/`:
+  `npm run lint` and `npm run build`.
+* Keep `node_modules/` and `.next/` out of version control; commit
+  `package-lock.json`.
 
 ## Data, models, and artifacts
 

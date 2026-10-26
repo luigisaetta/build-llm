@@ -10,6 +10,8 @@ authors = [{ name = "L. Saetta" }]
 [tool.black]
 line-length = 88
 target-version = ["py311"]
+# Third-party code installed by npm for the web UIs.
+extend-exclude = "node_modules"
 
 [tool.pylint.main]
 py-version = "3.11"
@@ -20,4 +22,6 @@ max-line-length = 88
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
-addopts = "-ra"
+# Tests marked "network" may download data; run them with: pytest -m network
+addopts = "-ra -m 'not network'"
+markers = ["network: the test needs network access (excluded by default)"]

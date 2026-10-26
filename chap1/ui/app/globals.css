@@ -1,0 +1,17 @@
+@import "tailwindcss";
+
+@theme inline {
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+/* A dark background with two soft colored glows. */
+body {
+  color: #e2e8f0;
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  background:
+    radial-gradient(60rem 40rem at 10% -10%, rgb(139 92 246 / 0.25), transparent 60%),
+    radial-gradient(50rem 35rem at 100% 10%, rgb(6 182 212 / 0.18), transparent 60%),
+    #070712;
+  background-attachment: fixed;
+}

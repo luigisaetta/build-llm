@@ -73,6 +73,13 @@ they are implemented and tested.
 - [ ] **Loading pretrained weights**: load public GPT-2 weights into our model.
 - [ ] **Fine-tuning**: classification fine-tuning and instruction fine-tuning.
 
+## Chapters
+
+| Chapter | Topic | What you get |
+| --- | --- | --- |
+| [Chapter 0](chap0/README.md) | Environment | A check of Python, packages, and MPS acceleration |
+| [Chapter 1](chap1/README.md) | Text data and tokenization | The Tokenizer explorer: a web UI and a CLI to see how GPT tokenizers split text |
+
 ## Getting started
 
 ### Prerequisites
@@ -80,6 +87,8 @@ they are implemented and tested.
 * Python 3.11 or later.
 * [Conda](https://docs.conda.io/) (Anaconda or Miniconda).
 * Git.
+* [Node.js](https://nodejs.org/) 20.9 or later, with npm, for the web UIs of
+  the demos (for example the one in Chapter 1).
 
 ### Setup
 
@@ -139,11 +148,13 @@ pytest
 build-llm/
 ├── build_llm/            # Reusable package with the LLM building blocks
 ├── chap0/                # Chapter 0: check of the development environment
+├── chap1/                # Chapter 1: text data and tokenization
+│   └── ui/               # Web UI of the tokenizer demo (Next.js)
 ├── tests/                # pytest test suite
 ├── AGENTS.md             # Rules for contributors and coding agents
 ├── pyproject.toml        # Project metadata and tool configuration
 ├── requirements.txt      # Runtime dependencies
-└── requirements-dev.txt  # Development tools (black, pylint, pytest)
+└── requirements-dev.txt  # Development tools (black, pylint, pytest, httpx2)
 ```
 
 ## Contributing

@@ -22,12 +22,21 @@ HEADER_PATTERN = re.compile(
 )
 
 
+# Third-party code installed by npm for the web UIs.
+EXCLUDED_FOLDERS = {"node_modules"}
+
+
 def find_python_files() -> list[Path]:
-    """Return the Python files of the repository, skipping hidden folders."""
+    """Return the Python files of the project.
+
+    Hidden folders (such as .git) and third-party folders are skipped.
+    """
     files = []
     for path in sorted(REPOSITORY_ROOT.rglob("*.py")):
         relative_parts = path.relative_to(REPOSITORY_ROOT).parts
-        if not any(part.startswith(".") for part in relative_parts):
+        is_hidden = any(part.startswith(".") for part in relative_parts)
+        is_excluded = any(part in EXCLUDED_FOLDERS for part in relative_parts)
+        if not is_hidden and not is_excluded:
             files.append(path)
     return files
 
