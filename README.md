@@ -123,6 +123,13 @@ python -m chap0.check_environment
 
 All the scripts run from the repository root as modules, with `python -m`.
 
+To work with Jupyter notebooks, activate the `build-llm` environment and start
+JupyterLab from the repository root:
+
+```bash
+python -m jupyterlab
+```
+
 ### Development checks
 
 Format the code:
@@ -155,7 +162,7 @@ build-llm/
 ├── AGENTS.md             # Rules for contributors and coding agents
 ├── pyproject.toml        # Project metadata and tool configuration
 ├── requirements.txt      # Runtime dependencies
-└── requirements-dev.txt  # Development tools (black, pylint, pytest, httpx2)
+└── requirements-dev.txt  # Development tools and JupyterLab
 ```
 
 ## Contributing

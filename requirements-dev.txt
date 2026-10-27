@@ -2,5 +2,7 @@
 black>=24.0
 pylint>=3.0
 pytest>=8.0
+# Interactive development with Jupyter notebooks.
+jupyterlab>=4.0
 # Needed by fastapi.testclient in the API tests.
 httpx2>=2.0
