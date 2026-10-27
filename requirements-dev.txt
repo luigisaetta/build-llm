@@ -1,5 +1,5 @@
 # Development tools of build-llm.
-black>=24.0
+black[jupyter]>=24.0
 pylint>=3.0
 pytest>=8.0
 # Interactive development with Jupyter notebooks.
