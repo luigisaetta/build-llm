@@ -8,6 +8,7 @@ idea, not the full theory.
 
 * [Chapter 1: text data and tokenization](#chapter-1-text-data-and-tokenization)
   * [Why do we need positional embeddings, if the tokens already arrive in order?](#why-do-we-need-positional-embeddings-if-the-tokens-already-arrive-in-order)
+  * [Why does the notebook use an embedding size of 256?](#why-does-the-notebook-use-an-embedding-size-of-256)
 * [Chapter 2: attention](#chapter-2-attention)
   * [Why are the attention weights normalized with softmax?](#why-are-the-attention-weights-normalized-with-softmax)
 
@@ -55,6 +56,48 @@ Some details:
 * The causal mask of a GPT model gives a weak, indirect hint about position,
   because each token sees only the tokens before it. Explicit positional
   information is still much more effective.
+
+### Why does the notebook dataloader.ipynb use an embedding size of 256?
+
+It is a teaching choice, not a property of the model. The embedding size
+(`emb_dim`, also called the model dimension) is a **hyperparameter**: we pick
+it when we design the model. 256 is large enough to show realistic tensor
+shapes, and small enough to keep the examples fast and the printed tensors
+readable.
+
+Real models use larger values, which grow with the size of the model. The
+four GPT-2 variants are a good example:
+
+| GPT-2 variant | Parameters | Embedding size | Layers | Attention heads |
+| --- | --- | --- | --- | --- |
+| Small | 124M | 768 | 12 | 12 |
+| Medium | 355M | 1,024 | 24 | 16 |
+| Large | 774M | 1,280 | 36 | 20 |
+| XL | 1.5B | 1,600 | 48 | 25 |
+
+GPT-3, with 175B parameters, uses 12,288.
+
+What does the size change?
+
+* **Capacity.** Each token is represented by `emb_dim` numbers. More
+  dimensions can store more information about the meaning and the role of a
+  token, but need more data and more compute to train well.
+* **Memory and speed.** The token embedding table alone has
+  `vocab_size × emb_dim` parameters. With the GPT-2 vocabulary of 50,257
+  tokens, that is about 12.9M parameters with 256 dimensions, and about
+  38.6M with 768. The cost of the rest of the model grows with `emb_dim`
+  too.
+* **Consistency.** The same size runs through the whole model: the
+  positional embeddings must have the same size as the token embeddings,
+  because they are added together, and the attention layers must split
+  `emb_dim` evenly across the heads (768 = 12 × 64 in GPT-2 Small).
+
+Values are usually multiples of 64 (or powers of two), because GPU and MPS
+kernels work most efficiently with these sizes.
+
+To load the public GPT-2 weights later (see the roadmap), our GPT model will
+need the same configuration as one of the variants, for example GPT-2 Small
+with 768 dimensions.
 
 ## Chapter 2: attention
 
