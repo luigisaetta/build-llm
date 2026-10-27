@@ -62,9 +62,9 @@ The list below tracks the planned stages: ✅ implemented and tested,
 - ✅ **Text data and tokenization**: from raw text to token IDs with Byte
   Pair Encoding (BPE) and tiktoken, and the Tokenizer explorer demo
   ([Chapter 1](chap1/README.md)).
-- ⬜ **Data pipeline**: sliding-window datasets and data loaders for
-  next-token prediction.
-- ⬜ **Embeddings**: token and positional embeddings.
+- ✅ **Data pipeline**: sliding-window datasets and data loaders for
+  next-token prediction ([Chapter 1 notebook](chap1/dataloader.ipynb)).
+- 🚧 **Embeddings**: token and positional embeddings.
 - ⬜ **Attention**: self-attention, causal masking, multi-head attention.
 - ⬜ **GPT architecture**: layer normalization, feed-forward blocks,
   transformer blocks, the full GPT model.
@@ -79,76 +79,14 @@ The list below tracks the planned stages: ✅ implemented and tested,
 | Chapter | Topic | What you get |
 | --- | --- | --- |
 | [Chapter 0](chap0/README.md) | Environment | A check of Python, packages, and MPS acceleration |
-| [Chapter 1](chap1/README.md) | Text data and tokenization | The Tokenizer explorer: a web UI and a CLI to see how GPT tokenizers split text |
+| [Chapter 1](chap1/README.md) | Text data and tokenization | The Tokenizer explorer (web UI and CLI), and a notebook on the data loader for next-token prediction |
 
 ## Getting started
 
-### Prerequisites
-
-* Python 3.11 or later.
-* [Conda](https://docs.conda.io/) (Anaconda or Miniconda).
-* Git.
-* [Node.js](https://nodejs.org/) 20.9 or later, with npm, for the web UIs of
-  the demos (for example the one in Chapter 1).
-
-### Setup
-
-Clone the repository:
-
-```bash
-git clone https://github.com/luigisaetta/build-llm.git
-```
-
-Create and activate the Conda environment:
-
-```bash
-conda create -n build-llm python=3.11
-```
-
-```bash
-conda activate build-llm
-```
-
-From the repository root, install the runtime and development dependencies:
-
-```bash
-pip install -r requirements.txt -r requirements-dev.txt
-```
-
-Check that the environment is ready (see [Chapter 0](chap0/README.md)):
-
-```bash
-python -m chap0.check_environment
-```
-
-All the scripts run from the repository root as modules, with `python -m`.
-
-To work with Jupyter notebooks, activate the `build-llm` environment and start
-JupyterLab from the repository root:
-
-```bash
-python -m jupyterlab
-```
-
-### Development checks
-
-Format the code:
-
-```bash
-black .
-```
-
-Lint the code:
-
-```bash
-pylint build_llm chap* tests
-```
-
-Run the tests:
-
-```bash
-pytest
-```
+To set up the environment and run the chapters, follow the
+[Quickstart](QUICKSTART.md). In short: create the `build-llm` Conda
+environment with Python 3.11, install `requirements.txt` and
+`requirements-dev.txt`, and run `python -m chap0.check_environment`.
 
 ## Repository layout
 
@@ -159,6 +97,7 @@ build-llm/
 ├── chap1/                # Chapter 1: text data and tokenization
 │   └── ui/               # Web UI of the tokenizer demo (Next.js)
 ├── tests/                # pytest test suite
+├── QUICKSTART.md         # Setup, environment check, and development checks
 ├── AGENTS.md             # Rules for contributors and coding agents
 ├── pyproject.toml        # Project metadata and tool configuration
 ├── requirements.txt      # Runtime dependencies

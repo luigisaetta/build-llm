@@ -4,7 +4,18 @@ A language model never reads letters or words. Before anything else, the text
 is split into **tokens**, and each token is mapped to an integer **token ID**.
 The model only ever sees these IDs.
 
-This chapter starts with an interactive demo: the **Tokenizer explorer**. It
+This chapter has two parts:
+
+1. The **Tokenizer explorer**, an interactive demo (web UI and command line)
+   that shows how GPT tokenizers split a text.
+2. The **data loader notebook** ([`dataloader.ipynb`](dataloader.ipynb)),
+   which turns a tokenized text into the input and target batches used to
+   train a model to predict the next token.
+
+## Part 1: the Tokenizer explorer
+
+The **Tokenizer explorer** shows how the Byte Pair Encoding (BPE) tokenizers used by GPT models split a
+text, using the [tiktoken](https://github.com/openai/tiktoken) library. With
 shows how the Byte Pair Encoding (BPE) tokenizers used by GPT models split a
 text, using the [tiktoken](https://github.com/openai/tiktoken) library. With
 it you can:
@@ -26,7 +37,7 @@ Things worth trying:
 * Turn on "Show whitespace": most tokens start with a space, which belongs
   to the token itself.
 
-## Architecture
+### Architecture
 
 ```text
 Browser (React)        Next.js server (port 3000)          FastAPI (port 8000)
@@ -47,7 +58,7 @@ Browser (React)        Next.js server (port 3000)          FastAPI (port 8000)
   Python backend. So no CORS configuration is needed, and the backend address
   is configured in one place.
 
-## Prerequisites
+### Prerequisites
 
 * The `build-llm` Conda environment, with the packages of
   `requirements.txt` and `requirements-dev.txt` installed. Check it with
@@ -56,7 +67,7 @@ Browser (React)        Next.js server (port 3000)          FastAPI (port 8000)
 * Network access the first time you use each tokenizer: tiktoken downloads
   its vocabulary file once and keeps it in a local cache.
 
-## Run the demo
+### Run the demo
 
 The demo needs two processes, each in its own terminal.
 
@@ -102,7 +113,7 @@ BACKEND_URL=http://127.0.0.1:9000 npm run dev
 
 To stop the demo, press `Ctrl+C` in both terminals.
 
-## Use the command line
+### Use the command line
 
 The same tokenization is available from the command line, without the UI.
 Run these commands from the repository root:
@@ -148,6 +159,49 @@ Use `--show N` to list more or fewer tokens (`--show 0` lists all of them).
 The exit code is 0 on success, 1 if the text cannot be read, and 2 for
 invalid arguments.
 
+## Part 2: the data loader notebook
+
+To train a GPT model, the tokenized text must become pairs of sequences: an
+**input** and a **target**, which is the input shifted forward by one token.
+For each position, the model learns to predict the target token from the
+input tokens up to that position.
+
+The notebook [`dataloader.ipynb`](dataloader.ipynb), largely inspired by the
+[notebook of the book](https://github.com/rasbt/LLMs-from-scratch/blob/main/ch02/01_main-chapter-code/dataloader.ipynb),
+shows how:
+
+* `GPTDatasetV1` tokenizes a text with tiktoken (`gpt2`) and cuts it into
+  input and target sequences with a **sliding window**;
+* `create_dataloader_v1` wraps the dataset in a PyTorch `DataLoader`, which
+  groups the sequences into shuffled batches;
+* a batch of token IDs becomes the model input: **token embeddings** plus
+  **positional embeddings**, with shape `(batch_size, max_length, emb_dim)`,
+  for example `(8, 4, 256)`.
+
+It also explains the difference between three parameters:
+
+* `max_length`: the number of tokens of each input sequence;
+* `stride`: how many tokens the window moves between one sequence and the
+  next (a stride smaller than `max_length` makes the sequences overlap);
+* `context_length`: the number of positions of the positional embedding
+  table, which must be at least `max_length`.
+
+The text used is [`the-verdict.txt`](the-verdict.txt): the short story
+"The Verdict" by Edith Wharton (1908), in the public domain, the same text
+used in the book.
+
+### Run the notebook
+
+From the repository root, with the `build-llm` environment active:
+
+```bash
+python -m jupyterlab
+```
+
+Open `chap1/dataloader.ipynb` and run the cells in order. The notebook reads
+`the-verdict.txt` from its own folder, and needs network access only the first
+time, to download the `gpt2` vocabulary.
+
 ## Tests and checks
 
 From the repository root:
@@ -174,7 +228,7 @@ npm run lint
 npm run build
 ```
 
-## Limitations
+## Limitations of the Tokenizer explorer
 
 * Reading a URL works for HTML pages and plain-text files, not for PDF or
   other formats. When a page has a `<main>` or `<article>` element, only its
