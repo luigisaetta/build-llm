@@ -81,6 +81,9 @@ The list below tracks the planned stages: ✅ implemented and tested,
 | [Chapter 0](chap0/README.md) | Environment | A check of Python, packages, and MPS acceleration |
 | [Chapter 1](chap1/README.md) | Text data and tokenization | The Tokenizer explorer (web UI and CLI), and a notebook on the data loader for next-token prediction |
 
+Questions that come up along the way, with short answers, are collected by
+chapter in [Questions and answers](docs/questions-and-answers.md).
+
 ## Getting started
 
 To set up the environment and run the chapters, follow the
@@ -96,6 +99,7 @@ build-llm/
 ├── chap0/                # Chapter 0: check of the development environment
 ├── chap1/                # Chapter 1: text data and tokenization
 │   └── ui/               # Web UI of the tokenizer demo (Next.js)
+├── docs/                 # Guides, such as the questions and answers by chapter
 ├── tests/                # pytest test suite
 ├── QUICKSTART.md         # Setup, environment check, and development checks
 ├── AGENTS.md             # Rules for contributors and coding agents
