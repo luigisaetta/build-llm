@@ -8,9 +8,10 @@ idea, not the full theory.
 
 * [Chapter 1: text data and tokenization](#chapter-1-text-data-and-tokenization)
   * [Why do we need positional embeddings, if the tokens already arrive in order?](#why-do-we-need-positional-embeddings-if-the-tokens-already-arrive-in-order)
-  * [Why does the notebook use an embedding size of 256?](#why-does-the-notebook-use-an-embedding-size-of-256)
+  * [Why does the notebook dataloader.ipynb use an embedding size of 256?](#why-does-the-notebook-dataloaderipynb-use-an-embedding-size-of-256)
 * [Chapter 2: attention](#chapter-2-attention)
   * [Why are the attention weights normalized with softmax?](#why-are-the-attention-weights-normalized-with-softmax)
+  * [Can the SelfAttention_v1 and SelfAttention_v2 classes be stacked as layers to build the LLM?](#can-the-selfattention_v1-and-selfattention_v2-classes-be-stacked-as-layers-to-build-the-llm)
 
 ## Chapter 1: text data and tokenization
 
@@ -140,3 +141,48 @@ very small gradients.
 
 Softmax is the standard choice, not the only one. Alternatives such as
 sparsemax or sigmoid attention exist, but they are less common.
+
+### Can the SelfAttention_v1 and SelfAttention_v2 classes be stacked as layers to build the LLM?
+
+Not as they are. They are the right building block, but the LLM does not
+stack bare attention layers.
+
+Technically, stacking works: both classes are `nn.Module`s that map
+`(num_tokens, d_in)` to `(num_tokens, d_out)`, so they can be chained in an
+`nn.Sequential` when each `d_out` equals the next `d_in`. But a GPT model needs
+more, at two levels.
+
+**Inside the attention layer**, the chapter 2 classes are simplified:
+
+* **No causal mask.** Every token sees the tokens after it. In next-token
+  training, the model could read the answer instead of predicting it.
+* **No batch dimension.** They use `keys.T`, which is correct only for a 2D
+  matrix. With batches of shape `(batch_size, num_tokens, d_in)`, the code
+  must use `keys.transpose(-2, -1)`.
+* **A single head, and no output projection.** GPT uses multi-head
+  attention: several heads in parallel, each looking at different relations
+  between tokens, followed by a linear layer that combines their outputs.
+* **Initialization.** `SelfAttention_v1` fills its matrices with
+  `torch.rand`, which gives only positive values in `[0, 1)` and is a poor
+  start for training. `SelfAttention_v2` uses `nn.Linear`, with a better
+  initialization, and is the version to build on.
+
+**Around the attention layer**, the unit that GPT stacks is the **transformer
+block**, not attention alone:
+
+```text
+x = x + MultiHeadAttention(LayerNorm(x))   # tokens exchange information
+x = x + FeedForward(LayerNorm(x))          # each token is processed on its own
+```
+
+* The **feed-forward network** adds the non-linearity. Attention mostly
+  computes weighted averages of linear projections; the feed-forward layers
+  transform each token's vector.
+* The **residual connections** (`x + ...`) and **layer normalization** keep
+  training stable when many blocks are stacked. Without residual
+  connections, deep stacks of pure attention tend to make all the token
+  vectors converge to the same value, a known problem called *rank collapse*.
+
+GPT-2 Small stacks 12 of these blocks. The next steps of the chapter (causal
+masking, batches, multiple heads) turn `SelfAttention_v2` into the multi-head
+attention that goes inside each block.
