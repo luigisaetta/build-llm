@@ -65,7 +65,9 @@ The list below tracks the planned stages: ✅ implemented and tested,
 - ✅ **Data pipeline**: sliding-window datasets and data loaders for
   next-token prediction ([Chapter 1 notebook](chap1/dataloader.ipynb)).
 - 🚧 **Embeddings**: token and positional embeddings.
-- ⬜ **Attention**: self-attention, causal masking, multi-head attention.
+- 🚧 **Attention**: simplified self-attention and trainable query, key, and
+  value projections are demonstrated in [Chapter 2](chap2/README.md);
+  causal masking and multi-head attention are planned.
 - ⬜ **GPT architecture**: layer normalization, feed-forward blocks,
   transformer blocks, the full GPT model.
 - ⬜ **Text generation**: greedy decoding, temperature, top-k sampling.
@@ -80,6 +82,7 @@ The list below tracks the planned stages: ✅ implemented and tested,
 | --- | --- | --- |
 | [Chapter 0](chap0/README.md) | Environment | A check of Python, packages, and MPS acceleration |
 | [Chapter 1](chap1/README.md) | Text data and tokenization | The Tokenizer explorer (web UI and CLI), and a notebook on the data loader for next-token prediction |
+| [Chapter 2](chap2/README.md) | Self-attention | Two notebooks: simplified attention and scaled attention with trainable query, key, and value projections |
 
 Questions that come up along the way, with short answers, are collected by
 chapter in [Questions and answers](docs/questions-and-answers.md).
@@ -99,6 +102,7 @@ build-llm/
 ├── chap0/                # Chapter 0: check of the development environment
 ├── chap1/                # Chapter 1: text data and tokenization
 │   └── ui/               # Web UI of the tokenizer demo (Next.js)
+├── chap2/                # Chapter 2: simplified and trainable self-attention
 ├── docs/                 # Guides, such as the questions and answers by chapter
 ├── tests/                # pytest test suite
 ├── QUICKSTART.md         # Setup, environment check, and development checks
