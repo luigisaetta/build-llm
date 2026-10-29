@@ -18,9 +18,9 @@ laptop.
 No magic, no hidden frameworks: each piece is small, readable, and explained,
 so that you can understand *why* it works, not only *that* it works.
 
-> **Status: work in progress.** Chapters 0 to 2 are available: environment,
-> tokenization and data loading, and attention, up to multi-head causal
-> attention. New chapters are added as the project grows; see the
+> **Status: work in progress.** Chapters 0 to 3 are available: environment,
+> tokenization and data loading, attention up to multi-head causal attention,
+> and a first, dummy skeleton of the GPT model. New chapters are added as the project grows; see the
 > [roadmap](#roadmap).
 
 <p align="center">
@@ -96,6 +96,7 @@ The chapter numbers of this repository differ from the book.
 | [Chap 0](chap0/README.md) | Environment | A check of Python, packages, and MPS acceleration | — |
 | [Chap 1](chap1/README.md) | Text data and tokenization | The Tokenizer explorer (web UI and CLI), and a notebook on the data loader for next-token prediction | 2 |
 | [Chap 2](chap2/README.md) | Self-attention | Four notebooks: simplified attention, scaled attention with trainable query, key, and value projections, causal attention with dropout, and multi-head attention | 3 |
+| [Chap 3](chap3/README.md) | GPT architecture | A notebook with a dummy GPT model, from token IDs to logits, and the parameter count of the full architecture | 4 |
 
 ## Getting started
 
@@ -118,8 +119,9 @@ start from [Chapter 1](chap1/README.md).
 - ✅ **Attention**: simplified self-attention, trainable query, key, and
   value projections, causal attention with dropout, and multi-head attention
   ([Chapter 2](chap2/README.md)).
-- ⬜ **GPT architecture**: layer normalization, feed-forward blocks,
-  transformer blocks, the full GPT model.
+- 🚧 **GPT architecture**: the model skeleton and its parameter count
+  ([Chapter 3](chap3/README.md)); next, layer normalization, feed-forward
+  blocks, transformer blocks, and the full GPT model.
 - ⬜ **Text generation**: greedy decoding, temperature, top-k sampling.
 - ⬜ **Pre-training**: loss computation, training loop, checkpoints.
 - ⬜ **Evaluation**: training and validation loss, perplexity.
@@ -134,7 +136,8 @@ build-llm/
 ├── chap0/                # Chapter 0: check of the development environment
 ├── chap1/                # Chapter 1: text data and tokenization
 │   └── ui/               # Web UI of the tokenizer demo (Next.js)
-├── chap2/                # Chapter 2: simplified and trainable self-attention
+├── chap2/                # Chapter 2: self-attention, up to multi-head attention
+├── chap3/                # Chapter 3: the GPT model architecture
 ├── docs/                 # Guides, such as the questions and answers by chapter
 ├── images/               # Images used in the documentation
 ├── tests/                # pytest test suite
@@ -161,8 +164,8 @@ Many thanks to **Sebastian Raschka** for the book and for the
 which made this project possible.
 
 * The notebooks `chap1/dataloader.ipynb`, `chap2/basic_attention.ipynb`,
-  `chap2/attention.ipynb`, `chap2/causal_attention.ipynb`, and
-  `chap2/multi_head_attention.ipynb` are derived from the notebooks of
+  `chap2/attention.ipynb`, `chap2/causal_attention.ipynb`,
+  `chap2/multi_head_attention.ipynb`, and `chap3/dummy_gpt.ipynb` are derived from the notebooks of
   LLMs-from-scratch,
   Copyright 2023-2026 Sebastian Raschka, licensed under the
   [Apache License 2.0](LICENSES/Apache-2.0-LLMs-from-scratch.txt). They were

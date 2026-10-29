@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "build-llm"
 version = "0.1.0"
@@ -6,6 +10,10 @@ readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
 authors = [{ name = "L. Saetta" }]
+
+[tool.setuptools.packages.find]
+include = ["build_llm*", "chap0*", "chap1*"]
+namespaces = false
 
 [tool.black]
 line-length = 88

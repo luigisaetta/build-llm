@@ -36,6 +36,17 @@ From the repository root, install the runtime and development dependencies:
 pip install -r requirements.txt -r requirements-dev.txt
 ```
 
+Install the local project in editable mode from the repository root:
+
+```bash
+python -m pip install --no-deps -e .
+```
+
+This makes `build_llm` importable from notebook kernels started in chapter
+folders. Editable mode uses the source files directly, so code changes do not
+require reinstalling the package. Dependencies remain managed through the two
+requirements files above.
+
 ## Check the environment
 
 From the repository root, run the check of [Chapter 0](chap0/README.md):
@@ -72,6 +83,9 @@ python -m jupyterlab
 
 Then open the notebooks from the chapter folders, for example
 `chap1/dataloader.ipynb`.
+
+Use a kernel from the `build-llm` environment. If a running kernel cannot import
+`build_llm` after the editable installation, restart it and run all cells again.
 
 ## Development checks
 
