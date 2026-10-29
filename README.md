@@ -27,9 +27,11 @@ by **Sebastian Raschka** (Manning, 2024), and by its companion repository
 [rasbt/LLMs-from-scratch](https://github.com/rasbt/LLMs-from-scratch).
 
 This is an independent learning project, not an official companion of the
-book. The code here is written from scratch, organized as a reusable Python
-package with tests, and may diverge from the book in structure and choices.
-If you want the full story behind every concept, read the book.
+book. The reusable package, the scripts, and the demos are written from
+scratch, with tests, and may diverge from the book in structure and choices.
+Some notebooks are derived from the companion repository: see
+[Acknowledgements and licenses](#acknowledgements-and-licenses). If you want
+the full story behind every concept, read the book.
 
 ## Why this repository
 
@@ -105,7 +107,10 @@ build-llm/
 ├── chap2/                # Chapter 2: simplified and trainable self-attention
 ├── docs/                 # Guides, such as the questions and answers by chapter
 ├── tests/                # pytest test suite
+├── LICENSES/             # Licenses of third-party material
 ├── QUICKSTART.md         # Setup, environment check, and development checks
+├── CONTRIBUTING.md       # How to ask questions, report problems, contribute
+├── NOTICE                # Attributions: what comes from where, and its license
 ├── AGENTS.md             # Rules for contributors and coding agents
 ├── pyproject.toml        # Project metadata and tool configuration
 ├── requirements.txt      # Runtime dependencies
@@ -114,10 +119,29 @@ build-llm/
 
 ## Contributing
 
-Contributions and suggestions are welcome. Please read [AGENTS.md](AGENTS.md)
-for the coding rules: code formatted with Black, linted with Pylint, and
-tested with pytest.
+Questions, corrections, and suggestions are welcome. Read
+[CONTRIBUTING.md](CONTRIBUTING.md) to see how to ask a question, report a
+problem, or propose a change.
+
+## Acknowledgements and licenses
+
+Many thanks to **Sebastian Raschka** for the book and for the
+[LLMs-from-scratch](https://github.com/rasbt/LLMs-from-scratch) repository,
+which made this project possible.
+
+* The notebooks `chap1/dataloader.ipynb`, `chap2/basic_attention.ipynb`, and
+  `chap2/attention.ipynb` are derived from the notebooks of LLMs-from-scratch,
+  Copyright 2023-2026 Sebastian Raschka, licensed under the
+  [Apache License 2.0](LICENSES/Apache-2.0-LLMs-from-scratch.txt). They were
+  modified for this repository, and each one states its origin.
+* `chap1/the-verdict.txt` is the short story "The Verdict" by Edith Wharton
+  (1908), in the public domain, taken from the same repository.
+* This repository does not include text or figures from the book.
+
+The details are in [NOTICE](NOTICE).
 
 ## License
 
-Released under the [MIT License](LICENSE).
+The original code and documentation of this repository are released under
+the [MIT License](LICENSE). The derived notebooks listed above keep the
+[Apache License 2.0](LICENSES/Apache-2.0-LLMs-from-scratch.txt).

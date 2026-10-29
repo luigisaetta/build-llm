@@ -144,6 +144,22 @@ Some chapters have a web UI for their demo, in `chapN/ui/`.
   of version control.
 * Document where data comes from and its license.
 
+## Third-party material and attribution
+
+* The original code and documentation are released under the MIT License.
+* Material derived from other projects keeps its license. For example, the
+  notebooks derived from
+  [LLMs-from-scratch](https://github.com/rasbt/LLMs-from-scratch) are under
+  the Apache License 2.0 (copy in `LICENSES/`).
+* When you add or adapt third-party material, in the same change:
+  * state its origin, copyright, and license at the top of the file (for a
+    notebook, in a markdown cell after the title), and say that it was
+    modified;
+  * list the file in `NOTICE`, with its source;
+  * add a copy of the license in `LICENSES/`, if it is not there yet.
+* Do not copy text or figures from the book: they are protected by copyright,
+  and the open-source license of LLMs-from-scratch excludes them.
+
 ## Working rules
 
 * Inspect the existing code and documentation before editing.

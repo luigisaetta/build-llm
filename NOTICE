@@ -1,0 +1,50 @@
+build-llm
+Copyright (c) 2026 Luigi Saetta
+
+This project is released under the MIT License (see LICENSE), except for the
+third-party material listed below, which keeps its original license.
+
+
+1. Code derived from "LLMs-from-scratch"
+----------------------------------------
+
+Source:    https://github.com/rasbt/LLMs-from-scratch
+Copyright: Copyright 2023-2026 Sebastian Raschka
+License:   Apache License, Version 2.0
+           (a copy is in LICENSES/Apache-2.0-LLMs-from-scratch.txt)
+
+The following notebooks are derived from the notebooks of that repository,
+which accompany the book "Build a Large Language Model (From Scratch)" by
+Sebastian Raschka (Manning, 2024). They were modified by Luigi Saetta: the
+explanations were rewritten and extended, and the code was adapted to this
+repository. Each notebook states its origin in its first cells.
+
+  chap1/dataloader.ipynb       derived from ch02/01_main-chapter-code/dataloader.ipynb
+  chap2/basic_attention.ipynb  derived from ch03/01_main-chapter-code/ch03.ipynb
+  chap2/attention.ipynb        derived from ch03/01_main-chapter-code/ch03.ipynb
+
+These files are distributed under the Apache License, Version 2.0. Changes
+made by Luigi Saetta to these files are also available under the same
+license.
+
+The book itself is not covered by these licenses. This repository does not
+include text or figures from the book.
+
+
+2. Sample text "the-verdict.txt"
+--------------------------------
+
+File:      chap1/the-verdict.txt
+Content:   "The Verdict", a short story by Edith Wharton, first published
+           in 1908. The story is in the public domain.
+Obtained:  from https://github.com/rasbt/LLMs-from-scratch
+           (ch02/01_main-chapter-code/the-verdict.txt), unchanged.
+
+
+3. Original code of this repository
+-----------------------------------
+
+All the other files, including the build_llm package, the chapter scripts,
+the tests, the web UI of Chapter 1, and the documentation, are original work
+by Luigi Saetta, released under the MIT License. They are written from
+scratch, with the book as a learning reference.

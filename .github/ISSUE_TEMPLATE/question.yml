@@ -1,0 +1,27 @@
+name: Question
+description: Ask a question about a chapter, a concept, or the code.
+title: "[Question] "
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for asking! Please check [Questions and answers](https://github.com/luigisaetta/build-llm/blob/main/docs/questions-and-answers.md) first: your question may already have an answer there.
+  - type: dropdown
+    id: chapter
+    attributes:
+      label: Chapter
+      options:
+        - "Chapter 0: environment"
+        - "Chapter 1: text data and tokenization"
+        - "Chapter 2: self-attention"
+        - "General / other"
+    validations:
+      required: true
+  - type: textarea
+    id: question
+    attributes:
+      label: Your question
+      description: What would you like to understand? Mention the file or notebook cell, if relevant.
+    validations:
+      required: true
