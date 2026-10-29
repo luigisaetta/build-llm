@@ -2,8 +2,9 @@
 
 Self-attention combines information from different tokens to produce one
 context vector per token. This chapter builds the calculation in PyTorch,
-starting with fixed input vectors and then introducing trainable query, key,
-and value projections.
+starting with fixed input vectors, then introducing trainable query, key,
+and value projections, and finally the causal mask, dropout, and batches
+used in a GPT model.
 
 The notebooks use a six-token sequence with three-dimensional illustrative
 embeddings, so that intermediate tensors remain small enough to inspect.
@@ -25,6 +26,12 @@ The chapter numbering in this repository differs from the book.
    the key dimension, and compute context vectors. Compare explicit
    `nn.Parameter` matrices with `nn.Linear` layers, inspect tensor shapes,
    and verify that both versions agree when their weights match.
+3. **[Causal attention and dropout](causal_attention.ipynb)**: build the
+   causal mask step by step, so that each token attends only to itself and
+   to earlier tokens, and apply dropout to the attention weights. Wrap
+   everything in a `CausalAttention` class that processes batches, then
+   check that future tokens do not influence earlier outputs, and compare
+   training and evaluation mode.
 
 ## Run the notebooks
 
@@ -39,10 +46,11 @@ conda activate build-llm
 python -m jupyterlab
 ```
 
-Open `chap2/basic_attention.ipynb`, then `chap2/attention.ipynb`. Use the
-Python kernel from the `build-llm` environment and run each notebook from
-top to bottom. Restart the kernel and run all cells when checking changes.
-Each notebook is independent of the other.
+Open `chap2/basic_attention.ipynb`, then `chap2/attention.ipynb`, then
+`chap2/causal_attention.ipynb`. Use the Python kernel from the `build-llm`
+environment and run each notebook from top to bottom. Restart the kernel and
+run all cells when checking changes. Each notebook is independent of the
+others.
 
 The examples run on CPU and require no datasets, downloaded weights, or
 network access after the dependencies are installed.
@@ -68,10 +76,11 @@ embedding dimension is also the output dimension.
 
 ## Scope and next steps
 
-These are single-head, unmasked examples for one sequence without a batch
-dimension. They have no positional encoding, causal mask, or final output
-projection. A token can attend to later tokens, so these implementations
-need causal masking before use in a GPT next-token predictor.
+The first two notebooks are single-head, unmasked examples for one sequence
+without a batch dimension: a token can attend to later tokens.
+`causal_attention.ipynb` adds the causal mask, dropout, and the batch
+dimension, with inputs of shape `(b, num_tokens, d_in)`. All the examples are
+single-head, and have no positional encoding or final output projection.
 
 The projection matrices in `attention.ipynb` are trainable, but the notebook
 does not train them: there is no loss, optimizer, or parameter update. The
@@ -79,7 +88,8 @@ displayed outputs come from randomly initialized weights. Attention weights
 are computed from the current inputs and parameters; they are not separate
 trainable parameters.
 
-The next steps are causal masking, batch support, and multi-head attention.
+The next step is multi-head attention: several causal attention heads in
+parallel, combined by a final linear projection.
 
 ## Development checks
 

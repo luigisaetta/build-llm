@@ -19,7 +19,7 @@ No magic, no hidden frameworks: each piece is small, readable, and explained,
 so that you can understand *why* it works, not only *that* it works.
 
 > **Status: work in progress.** Chapters 0 to 2 are available: environment,
-> tokenization and data loading, and self-attention. New chapters are added as
+> tokenization and data loading, and self-attention with causal masking. New chapters are added as
 > the project grows; see the [roadmap](#roadmap).
 
 <p align="center">
@@ -94,7 +94,7 @@ The chapter numbers of this repository differ from the book.
 | --- | --- | --- | --- |
 | [Chap 0](chap0/README.md) | Environment | A check of Python, packages, and MPS acceleration | — |
 | [Chap 1](chap1/README.md) | Text data and tokenization | The Tokenizer explorer (web UI and CLI), and a notebook on the data loader for next-token prediction | 2 |
-| [Chap 2](chap2/README.md) | Self-attention | Two notebooks: simplified attention and scaled attention with trainable query, key, and value projections | 3 |
+| [Chap 2](chap2/README.md) | Self-attention | Three notebooks: simplified attention, scaled attention with trainable query, key, and value projections, and causal attention with dropout | 3 |
 
 ## Getting started
 
@@ -114,9 +114,9 @@ start from [Chapter 1](chap1/README.md).
 - ✅ **Data pipeline**: sliding-window datasets and data loaders for
   next-token prediction ([Chapter 1 notebook](chap1/dataloader.ipynb)).
 - 🚧 **Embeddings**: token and positional embeddings.
-- 🚧 **Attention**: simplified self-attention and trainable query, key, and
-  value projections are demonstrated in [Chapter 2](chap2/README.md);
-  causal masking and multi-head attention are planned.
+- 🚧 **Attention**: simplified self-attention, trainable query, key, and
+  value projections, and causal attention with dropout are demonstrated in
+  [Chapter 2](chap2/README.md); multi-head attention is planned.
 - ⬜ **GPT architecture**: layer normalization, feed-forward blocks,
   transformer blocks, the full GPT model.
 - ⬜ **Text generation**: greedy decoding, temperature, top-k sampling.
@@ -159,8 +159,9 @@ Many thanks to **Sebastian Raschka** for the book and for the
 [LLMs-from-scratch](https://github.com/rasbt/LLMs-from-scratch) repository,
 which made this project possible.
 
-* The notebooks `chap1/dataloader.ipynb`, `chap2/basic_attention.ipynb`, and
-  `chap2/attention.ipynb` are derived from the notebooks of LLMs-from-scratch,
+* The notebooks `chap1/dataloader.ipynb`, `chap2/basic_attention.ipynb`,
+  `chap2/attention.ipynb`, and `chap2/causal_attention.ipynb` are derived from
+  the notebooks of LLMs-from-scratch,
   Copyright 2023-2026 Sebastian Raschka, licensed under the
   [Apache License 2.0](LICENSES/Apache-2.0-LLMs-from-scratch.txt). They were
   modified for this repository, and each one states its origin.
