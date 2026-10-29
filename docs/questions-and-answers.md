@@ -12,6 +12,7 @@ idea, not the full theory.
 * [Chapter 2: attention](#chapter-2-attention)
   * [Why are the attention weights normalized with softmax?](#why-are-the-attention-weights-normalized-with-softmax)
   * [Can the SelfAttention_v1 and SelfAttention_v2 classes be stacked as layers to build the LLM?](#can-the-selfattention_v1-and-selfattention_v2-classes-be-stacked-as-layers-to-build-the-llm)
+  * [What are the advantages of SelfAttention_v2 over SelfAttention_v1?](#what-are-the-advantages-of-selfattention_v2-over-selfattention_v1)
 
 ## Chapter 1: text data and tokenization
 
@@ -186,3 +187,23 @@ x = x + FeedForward(LayerNorm(x))          # each token is processed on its own
 GPT-2 Small stacks 12 of these blocks. The next steps of the chapter (causal
 masking, batches, multiple heads) turn `SelfAttention_v2` into the multi-head
 attention that goes inside each block.
+
+### What are the advantages of SelfAttention_v2 over SelfAttention_v1?
+
+Both classes in [`chap2/attention.ipynb`](../chap2/attention.ipynb) compute
+the same attention: the notebook copies the v1 weights into v2 and gets the
+same outputs. The advantages of v2 come from `nn.Linear`:
+
+* **Better initialization.** v1 uses `torch.rand`: only positive values in
+  `[0, 1)`, whatever the input size. With realistic sizes (768 dimensions),
+  the scores become huge and softmax saturates: each token attends to one
+  token only, and the gradients vanish. `nn.Linear` draws zero-centered
+  values scaled by `1/sqrt(d_in)`, so attention starts smooth and can be
+  trained.
+* **Optional bias.** `qkv_bias=True` adds a bias to the projections, as GPT-2
+  does: we need it to load the GPT-2 weights.
+* **Standard building block.** The code is more idiomatic, and PyTorch tools
+  (custom initialization, quantization, LoRA fine-tuning) recognize
+  `nn.Linear` layers.
+
+v1 is useful to see the matrix products; v2 is the base for the next steps.
