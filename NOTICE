@@ -23,6 +23,8 @@ repository. Each notebook states its origin in its first cells.
   chap2/basic_attention.ipynb  derived from ch03/01_main-chapter-code/ch03.ipynb
   chap2/attention.ipynb        derived from ch03/01_main-chapter-code/ch03.ipynb
   chap2/causal_attention.ipynb derived from ch03/01_main-chapter-code/ch03.ipynb
+  chap2/multi_head_attention.ipynb
+                               derived from ch03/01_main-chapter-code/ch03.ipynb
 
 These files are distributed under the Apache License, Version 2.0. Changes
 made by Luigi Saetta to these files are also available under the same

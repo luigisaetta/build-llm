@@ -3,8 +3,8 @@
 Self-attention combines information from different tokens to produce one
 context vector per token. This chapter builds the calculation in PyTorch,
 starting with fixed input vectors, then introducing trainable query, key,
-and value projections, and finally the causal mask, dropout, and batches
-used in a GPT model.
+and value projections, then the causal mask, dropout, and batches, and
+finally the multi-head attention used in a GPT model.
 
 The notebooks use a six-token sequence with three-dimensional illustrative
 embeddings, so that intermediate tensors remain small enough to inspect.
@@ -32,6 +32,12 @@ The chapter numbering in this repository differs from the book.
    everything in a `CausalAttention` class that processes batches, then
    check that future tokens do not influence earlier outputs, and compare
    training and evaluation mode.
+4. **[Multi-head attention](multi_head_attention.ipynb)**: build multi-head
+   attention first as several `CausalAttention` heads whose outputs are
+   concatenated, then as the efficient `MultiHeadAttention` class, which
+   computes all the heads at once by reshaping the projections. Follow the
+   tensor shapes step by step, check that the two versions give the same
+   result, and count the parameters.
 
 ## Run the notebooks
 
@@ -46,8 +52,9 @@ conda activate build-llm
 python -m jupyterlab
 ```
 
-Open `chap2/basic_attention.ipynb`, then `chap2/attention.ipynb`, then
-`chap2/causal_attention.ipynb`. Use the Python kernel from the `build-llm`
+Open the notebooks in the order above: `basic_attention.ipynb`,
+`attention.ipynb`, `causal_attention.ipynb`, and `multi_head_attention.ipynb`.
+Use the Python kernel from the `build-llm`
 environment and run each notebook from top to bottom. Restart the kernel and
 run all cells when checking changes. Each notebook is independent of the
 others.
@@ -79,8 +86,10 @@ embedding dimension is also the output dimension.
 The first two notebooks are single-head, unmasked examples for one sequence
 without a batch dimension: a token can attend to later tokens.
 `causal_attention.ipynb` adds the causal mask, dropout, and the batch
-dimension, with inputs of shape `(b, num_tokens, d_in)`. All the examples are
-single-head, and have no positional encoding or final output projection.
+dimension, with inputs of shape `(b, num_tokens, d_in)`.
+`multi_head_attention.ipynb` adds several heads and the final output
+projection. None of the examples includes positional encoding: in a GPT
+model, positional embeddings are added to the inputs before attention.
 
 The projection matrices in `attention.ipynb` are trainable, but the notebook
 does not train them: there is no loss, optimizer, or parameter update. The
@@ -88,8 +97,8 @@ displayed outputs come from randomly initialized weights. Attention weights
 are computed from the current inputs and parameters; they are not separate
 trainable parameters.
 
-The next step is multi-head attention: several causal attention heads in
-parallel, combined by a final linear projection.
+The next step is the transformer block, built around multi-head attention:
+layer normalization, a feed-forward network, and residual connections.
 
 ## Development checks
 
