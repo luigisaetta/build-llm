@@ -80,9 +80,9 @@ The list below tracks the planned stages: ✅ implemented and tested,
 
 | Chapter | Topic | What you get |
 | --- | --- | --- |
-| [Chapter 0](chap0/README.md) | Environment | A check of Python, packages, and MPS acceleration |
-| [Chapter 1](chap1/README.md) | Text data and tokenization | The Tokenizer explorer (web UI and CLI), and a notebook on the data loader for next-token prediction |
-| [Chapter 2](chap2/README.md) | Self-attention | Two notebooks: simplified attention and scaled attention with trainable query, key, and value projections |
+| [Chap 0](chap0/README.md) | Environment | A check of Python, packages, and MPS acceleration |
+| [Chap 1](chap1/README.md) | Text data and tokenization | The Tokenizer explorer (web UI and CLI), and a notebook on the data loader for next-token prediction |
+| [Chap 2](chap2/README.md) | Self-attention | Two notebooks: simplified attention and scaled attention with trainable query, key, and value projections |
 
 Questions that come up along the way, with short answers, are collected by
 chapter in [Questions and answers](docs/questions-and-answers.md).
