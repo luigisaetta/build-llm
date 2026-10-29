@@ -6,6 +6,8 @@ idea, not the full theory.
 
 ## Contents
 
+* [Chapter 0: the environment](#chapter-0-the-environment)
+  * [What is MPS?](#what-is-mps)
 * [Chapter 1: text data and tokenization](#chapter-1-text-data-and-tokenization)
   * [Why do we need positional embeddings, if the tokens already arrive in order?](#why-do-we-need-positional-embeddings-if-the-tokens-already-arrive-in-order)
   * [Why does the notebook dataloader.ipynb use an embedding size of 256?](#why-does-the-notebook-dataloaderipynb-use-an-embedding-size-of-256)
@@ -13,6 +15,38 @@ idea, not the full theory.
   * [Why are the attention weights normalized with softmax?](#why-are-the-attention-weights-normalized-with-softmax)
   * [Can the SelfAttention_v1 and SelfAttention_v2 classes be stacked as layers to build the LLM?](#can-the-selfattention_v1-and-selfattention_v2-classes-be-stacked-as-layers-to-build-the-llm)
   * [What are the advantages of SelfAttention_v2 over SelfAttention_v1?](#what-are-the-advantages-of-selfattention_v2-over-selfattention_v1)
+
+## Chapter 0: the environment
+
+### What is MPS?
+
+MPS (**Metal Performance Shaders**) is Apple's library of GPU-optimized
+operations, built on Metal, Apple's GPU programming interface. PyTorch uses
+it as a backend called `mps`: on a Mac with Apple Silicon (M1, M2, ...),
+tensors and models placed on the `mps` device run on the GPU instead of the
+CPU.
+
+```python
+device = torch.device("mps")
+x = torch.rand(1024, 1024, device=device)  # this tensor lives on the GPU
+```
+
+In this project, `build_llm.device.get_device()` selects MPS when it is
+available, then CUDA, then CPU, and `python -m chap0.check_environment`
+checks that MPS computes the same results as the CPU.
+
+Good to know:
+
+* **Unified memory.** On Apple Silicon, CPU and GPU share the same memory, so
+  there is no separate GPU memory to fill. Tensors must still be moved to the
+  device with `.to(device)`.
+* **Not every operation is supported.** Some PyTorch operations have no MPS
+  version yet. Setting `PYTORCH_ENABLE_MPS_FALLBACK=1` runs them on the CPU
+  instead of raising an error.
+* **No 64-bit floats.** MPS does not support `float64`; use `float32` (the
+  PyTorch default) or lower precision.
+* **Requirements.** macOS 12.3 or later, and a PyTorch build with MPS
+  support (the standard macOS builds have it).
 
 ## Chapter 1: text data and tokenization
 
