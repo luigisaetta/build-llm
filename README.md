@@ -19,6 +19,13 @@ generation, evaluation, and fine-tuning.
 No magic, no hidden frameworks: each piece is small, readable, tested, and
 explained, so that you can understand *why* it works, not only *that* it works.
 
+<p align="center">
+  <img src="images/tokenizer-demo.png" alt="The Tokenizer explorer: choose a GPT tokenizer, paste a text, and see it split into colored tokens with their counts" width="800">
+</p>
+<p align="center">
+  <em>The Tokenizer explorer of <a href="chap1/README.md">Chapter 1</a>: see how GPT tokenizers split your text, token by token.</em>
+</p>
+
 ## Inspiration
 
 This project is inspired by the book
@@ -106,6 +113,7 @@ build-llm/
 │   └── ui/               # Web UI of the tokenizer demo (Next.js)
 ├── chap2/                # Chapter 2: simplified and trainable self-attention
 ├── docs/                 # Guides, such as the questions and answers by chapter
+├── images/               # Images used in the documentation
 ├── tests/                # pytest test suite
 ├── LICENSES/             # Licenses of third-party material
 ├── QUICKSTART.md         # Setup, environment check, and development checks
