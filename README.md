@@ -11,13 +11,16 @@
 > time, in plain Python and PyTorch.**
 
 Large Language Models often feel like black boxes. This repository opens the
-box. Starting from raw text, it builds every component needed to obtain a
-working, GPT-style small LLM: the tokenizer, the data pipeline, the attention
-mechanism, the transformer architecture, the pre-training loop, text
-generation, evaluation, and fine-tuning.
+box, one component at a time: from raw text to tokens, from tokens to
+attention, and on to a small GPT-style model that you can train and run on a
+laptop.
 
-No magic, no hidden frameworks: each piece is small, readable, tested, and
-explained, so that you can understand *why* it works, not only *that* it works.
+No magic, no hidden frameworks: each piece is small, readable, and explained,
+so that you can understand *why* it works, not only *that* it works.
+
+> **Status: work in progress.** Chapters 0 to 2 are available: environment,
+> tokenization and data loading, and self-attention. New chapters are added as
+> the project grows; see the [roadmap](#roadmap).
 
 <p align="center">
   <img src="images/tokenizer-demo.png" alt="The Tokenizer explorer: choose a GPT tokenizer, paste a text, and see it split into colored tokens with their counts" width="800">
@@ -26,47 +29,84 @@ explained, so that you can understand *why* it works, not only *that* it works.
   <em>The Tokenizer explorer of <a href="chap1/README.md">Chapter 1</a>: see how GPT tokenizers split your text, token by token.</em>
 </p>
 
-## Inspiration
+## Is this for you?
 
-This project is inspired by the book
-[**Build a Large Language Model (From Scratch)**](https://www.manning.com/books/build-a-large-language-model-from-scratch)
-by **Sebastian Raschka** (Manning, 2024), and by its companion repository
-[rasbt/LLMs-from-scratch](https://github.com/rasbt/LLMs-from-scratch).
+This repository is useful if you:
 
-This is an independent learning project, not an official companion of the
-book. The reusable package, the scripts, and the demos are written from
-scratch, with tests, and may diverge from the book in structure and choices.
-Some notebooks are derived from the companion repository: see
-[Acknowledgements and licenses](#acknowledgements-and-licenses). If you want
-the full story behind every concept, read the book.
+* want to understand how a GPT model works **inside**, not only how to call
+  one through an API;
+* are reading, or plan to read,
+  [*Build a Large Language Model (From Scratch)*](https://www.manning.com/books/build-a-large-language-model-from-scratch)
+  by Sebastian Raschka, and want a second, hands-on path through the same
+  ideas, with demos and short answers to common questions;
+* learn best by running code, changing a value, and seeing what happens;
+* have a Mac with Apple Silicon and want to use its GPU with PyTorch.
 
-## Why this repository
-
-* **Step by step**: the project grows incrementally; each stage builds on the
-  previous one and can be studied on its own.
-* **Readable first**: clear names, small functions, docstrings, and comments
-  that explain the non-obvious parts.
-* **Tested**: every building block comes with `pytest` tests, so you can
-  change things and immediately see what breaks.
-* **Small and runnable**: the target is a model that you can train and run on
-  a laptop (CPU, Apple Silicon MPS, or a single CUDA GPU).
-
-## Target platform
-
-The code is written to be portable: it runs on macOS, Linux, and Windows, on
+**What you need**: Python and basic programming. Some familiarity with
+PyTorch and with vectors and matrices helps, but each concept is introduced
+from the start. Any recent laptop is enough: the reference machine is a
+MacBook with Apple Silicon, and the code also runs on Linux and Windows, on
 CPU or on a CUDA GPU.
 
-The reference environment, where the code is developed, tested, and
-optimized, is a **MacBook with Apple Silicon**. When it is available, the
-code uses PyTorch's
-[MPS backend](https://pytorch.org/docs/stable/notes/mps.html) (Metal
-Performance Shaders) for GPU acceleration. It falls back to CUDA or CPU on
-other machines.
+It is probably **not** what you are looking for if you want to train large
+models, a production-ready library, or the official code of the book (that
+is [rasbt/LLMs-from-scratch](https://github.com/rasbt/LLMs-from-scratch)).
+
+## What you will learn
+
+* How text becomes numbers: BPE tokenization, token IDs, and embeddings.
+* How training data for next-token prediction is built, with sliding windows
+  and PyTorch data loaders.
+* How self-attention works, from a few lines of matrix algebra to the
+  multi-head attention inside a transformer block.
+* How the pieces fit into a GPT model that you pre-train, evaluate, and use
+  to generate text.
+* How to run all of it on a laptop, using the Apple Silicon GPU through MPS.
+
+## How this repository relates to the book
+
+This is an independent learning project, born while re-reading Sebastian
+Raschka's book: a collection of what I explored and built along the way. It
+is not an official companion of the book. For the full story behind every
+concept, read the book; for its complete code, see its
+[companion repository](https://github.com/rasbt/LLMs-from-scratch).
+
+What you find here in addition:
+
+* **Interactive demos**, such as the Tokenizer explorer, with a web UI and a
+  command-line tool.
+* **Reusable, tested code**: the building blocks live in the `build_llm`
+  package, with `pytest` tests, and every script runs with `python -m`.
+* **Questions and answers** by chapter: short answers to the questions that
+  come up while studying, in [docs/questions-and-answers.md](docs/questions-and-answers.md).
+* **Apple Silicon first**: the code is developed and optimized on a MacBook,
+  using PyTorch's [MPS backend](https://pytorch.org/docs/stable/notes/mps.html)
+  when it is available, and falling back to CUDA or CPU elsewhere.
+
+Some notebooks are derived from the companion repository: see
+[Acknowledgements and licenses](#acknowledgements-and-licenses).
+
+## Chapters
+
+The chapter numbers of this repository differ from the book.
+
+| Chapter | Topic | What you get | Book chapter |
+| --- | --- | --- | --- |
+| [Chap 0](chap0/README.md) | Environment | A check of Python, packages, and MPS acceleration | — |
+| [Chap 1](chap1/README.md) | Text data and tokenization | The Tokenizer explorer (web UI and CLI), and a notebook on the data loader for next-token prediction | 2 |
+| [Chap 2](chap2/README.md) | Self-attention | Two notebooks: simplified attention and scaled attention with trainable query, key, and value projections | 3 |
+
+## Getting started
+
+To set up the environment and run the chapters, follow the
+[Quickstart](QUICKSTART.md). In short: create the `build-llm` Conda
+environment with Python 3.11, install `requirements.txt` and
+`requirements-dev.txt`, and run `python -m chap0.check_environment`. Then
+start from [Chapter 1](chap1/README.md).
 
 ## Roadmap
 
-The list below tracks the planned stages: ✅ implemented and tested,
-🚧 in progress, ⬜ planned.
+✅ implemented, 🚧 in progress, ⬜ planned.
 
 - ✅ **Text data and tokenization**: from raw text to token IDs with Byte
   Pair Encoding (BPE) and tiktoken, and the Tokenizer explorer demo
@@ -84,24 +124,6 @@ The list below tracks the planned stages: ✅ implemented and tested,
 - ⬜ **Evaluation**: training and validation loss, perplexity.
 - ⬜ **Loading pretrained weights**: load public GPT-2 weights into our model.
 - ⬜ **Fine-tuning**: classification fine-tuning and instruction fine-tuning.
-
-## Chapters
-
-| Chapter | Topic | What you get |
-| --- | --- | --- |
-| [Chap 0](chap0/README.md) | Environment | A check of Python, packages, and MPS acceleration |
-| [Chap 1](chap1/README.md) | Text data and tokenization | The Tokenizer explorer (web UI and CLI), and a notebook on the data loader for next-token prediction |
-| [Chap 2](chap2/README.md) | Self-attention | Two notebooks: simplified attention and scaled attention with trainable query, key, and value projections |
-
-Questions that come up along the way, with short answers, are collected by
-chapter in [Questions and answers](docs/questions-and-answers.md).
-
-## Getting started
-
-To set up the environment and run the chapters, follow the
-[Quickstart](QUICKSTART.md). In short: create the `build-llm` Conda
-environment with Python 3.11, install `requirements.txt` and
-`requirements-dev.txt`, and run `python -m chap0.check_environment`.
 
 ## Repository layout
 
