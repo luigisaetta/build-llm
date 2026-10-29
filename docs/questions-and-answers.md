@@ -15,6 +15,8 @@ idea, not the full theory.
   * [Why are the attention weights normalized with softmax?](#why-are-the-attention-weights-normalized-with-softmax)
   * [Can the SelfAttention_v1 and SelfAttention_v2 classes be stacked as layers to build the LLM?](#can-the-selfattention_v1-and-selfattention_v2-classes-be-stacked-as-layers-to-build-the-llm)
   * [What are the advantages of SelfAttention_v2 over SelfAttention_v1?](#what-are-the-advantages-of-selfattention_v2-over-selfattention_v1)
+* [Chapter 3: the GPT model architecture](#chapter-3-the-gpt-model-architecture)
+  * [What are the logits produced by the GPT model?](#what-are-the-logits-produced-by-the-gpt-model)
 
 ## Chapter 0: the environment
 
@@ -241,3 +243,49 @@ same outputs. The advantages of v2 come from `nn.Linear`:
   `nn.Linear` layers.
 
 v1 is useful to see the matrix products; v2 is the base for the next steps.
+
+## Chapter 3: the GPT model architecture
+
+### What are the logits produced by the GPT model?
+
+The **logits** are the raw scores that the output head computes for every
+token of the vocabulary. In [`chap3/dummy_gpt.ipynb`](../chap3/dummy_gpt.ipynb),
+the last layer is a linear layer from `emb_dim` to `vocab_size`:
+
+```python
+logits = self.out_head(x)  # (batch_size, seq_len, vocab_size)
+```
+
+So, for each position of each sequence, the model returns 50,257 numbers, one
+per GPT-2 token. A higher logit means that the model considers that token a
+more likely **next token** after the tokens seen so far.
+
+Logits are **not probabilities**: they can be any real number, positive or
+negative, and they do not sum to 1. Softmax turns the logits at one position
+into the probability distribution of the next token:
+
+```python
+probabilities = torch.softmax(logits[:, -1, :], dim=-1)  # (batch_size, vocab_size)
+```
+
+Some details:
+
+* **One prediction per position.** The logits at position `t` predict the
+  token at position `t + 1`. During training, all the positions are used at
+  once; during text generation, only the last one, `logits[:, -1, :]`, is
+  needed to choose the next token.
+* **Training uses the logits directly.** `torch.nn.functional.cross_entropy`
+  takes the logits, not the probabilities: it applies log-softmax internally,
+  which is more numerically stable.
+* **Generation works on the logits too.** Greedy decoding picks the token with
+  the largest logit (softmax does not change the ranking). Temperature divides
+  the logits before softmax, and top-k sampling keeps only the `k` largest
+  logits.
+* **The name.** In statistics, the logit is the logarithm of the odds,
+  `log(p / (1 - p))`, the inverse of the sigmoid function. In deep learning,
+  the word means, more loosely, the unnormalized scores that go into
+  softmax: up to a constant, logits are log-probabilities.
+
+In the dummy model the weights are random and the transformer blocks do
+nothing, so its logits are meaningless; the shape, however, is already the
+final one.
