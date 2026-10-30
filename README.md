@@ -18,9 +18,10 @@ laptop.
 No magic, no hidden frameworks: each piece is small, readable, and explained,
 so that you can understand *why* it works, not only *that* it works.
 
-> **Status: work in progress.** Chapters 0 to 3 are available: environment,
+> **Status: work in progress.** Chapters 0 to 4 are available: environment,
 > tokenization and data loading, attention up to multi-head causal attention,
-> and the architecture of a GPT-2-like model. New chapters are added as the
+> the architecture of a GPT-2-like model, and loading the pretrained GPT-2
+> weights to generate text. New chapters are added as the
 > project grows; see the [roadmap](#roadmap).
 
 <p align="center">
@@ -97,6 +98,7 @@ The chapter numbers of this repository differ from the book.
 | [Chap 1](chap1/README.md) | Text data and tokenization | The Tokenizer explorer (web UI and CLI), and a notebook on the data loader for next-token prediction | 2 |
 | [Chap 2](chap2/README.md) | Self-attention | Four notebooks: simplified attention, scaled attention with trainable query, key, and value projections, causal attention with dropout, and multi-head attention | 3 |
 | [Chap 3](chap3/README.md) | GPT architecture | Two notebooks: a dummy GPT model, from token IDs to logits, and the complete GPT-2-like model built step by step, with its architecture diagram and parameter count | 4 |
+| [Chap 4](chap4/README.md) | Pretrained weights | A notebook that loads the GPT-2 Small weights from Hugging Face, without TensorFlow, and generates text | 5 |
 
 ## Getting started
 
@@ -122,10 +124,12 @@ start from [Chapter 1](chap1/README.md).
 - ✅ **GPT architecture**: layer normalization, GELU, feed-forward blocks,
   transformer blocks, and the full GPT model, with its parameter count
   ([Chapter 3](chap3/README.md)).
-- ⬜ **Text generation**: greedy decoding, temperature, top-k sampling.
+- 🚧 **Text generation**: greedy decoding ([Chapter 4](chap4/README.md));
+  next, temperature and top-k sampling.
 - ⬜ **Pre-training**: loss computation, training loop, checkpoints.
 - ⬜ **Evaluation**: training and validation loss, perplexity.
-- ⬜ **Loading pretrained weights**: load public GPT-2 weights into our model.
+- ✅ **Loading pretrained weights**: load the public GPT-2 Small weights,
+  in the safetensors format, into our model ([Chapter 4](chap4/README.md)).
 - ⬜ **Fine-tuning**: classification fine-tuning and instruction fine-tuning.
 
 ## Repository layout
@@ -138,8 +142,10 @@ build-llm/
 │   └── ui/               # Web UI of the tokenizer demo (Next.js)
 ├── chap2/                # Chapter 2: self-attention, up to multi-head attention
 ├── chap3/                # Chapter 3: the GPT model architecture
+├── chap4/                # Chapter 4: load the pretrained GPT-2 weights
 ├── docs/                 # Guides, such as the questions and answers by chapter
 ├── images/               # Images used in the documentation
+├── models/               # Downloaded model weights (ignored by Git)
 ├── tests/                # pytest test suite
 ├── LICENSES/             # Licenses of third-party material
 ├── QUICKSTART.md         # Setup, environment check, and development checks

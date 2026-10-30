@@ -223,3 +223,6 @@ __marimo__/
 
 # macOS Finder metadata
 .DS_Store
+
+# Downloaded model weights (see build_llm/gpt2_weights.py)
+/models/
