@@ -9,7 +9,7 @@ import pytest
 import torch
 from torch import nn
 
-from build_llm.gpt2_weights import GPT2_SMALL_CONFIG
+from build_llm.gpt2_weights import GPT2_SMALL_PRETRAINED_CONFIG
 from build_llm.model_parameters import count_parameters, estimate_gpt_parameters
 
 
@@ -75,7 +75,7 @@ def test_estimate_matches_tiny_modules(use_bias, tied):
 
 def test_standard_config_and_weight_tying():
     """The notebook configuration distinguishes untied weights from GPT-2 tying."""
-    config = {**GPT2_SMALL_CONFIG, "qkv_bias": False}
+    config = {**GPT2_SMALL_PRETRAINED_CONFIG, "qkv_bias": False}
     assert estimate_gpt_parameters(config)["total"] == 163009536
     config.update(tie_embeddings=True, qkv_bias=True)
     assert estimate_gpt_parameters(config)["total"] == 124439808

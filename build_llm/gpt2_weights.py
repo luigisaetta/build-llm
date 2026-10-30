@@ -22,9 +22,10 @@ from safetensors.torch import load_file
 
 from build_llm.gpt2 import GPTModel
 
-# Configuration of GPT-2 Small, matching config.json of the Hugging Face model.
-# Unlike the book's GPT_CONFIG_124M, qkv_bias is True: GPT-2 has these biases.
-GPT2_SMALL_CONFIG = {
+# Configuration of the pretrained GPT-2 Small, matching config.json of the
+# Hugging Face model. It has the same dimensions as GPT_CONFIG_SMALL of the
+# Chapter 3 notebooks, but qkv_bias is True: GPT-2 has these biases.
+GPT2_SMALL_PRETRAINED_CONFIG = {
     "vocab_size": 50257,
     "context_length": 1024,
     "emb_dim": 768,
