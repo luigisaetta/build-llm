@@ -34,22 +34,22 @@ The reusable code is in the `build_llm` package:
 ## A first training run
 
 [`first_training.py`](first_training.py) trains a GPT-2 Small-sized model
-from random weights on a single short text, `chap1/the-verdict.txt` (about
-5,000 tokens), with a context of 256 tokens (`GPT_CONFIG_SMALL_256`). It
-prints the training and validation losses every 5 steps, and a greedy
-continuation of "Every effort moves you" after each epoch. Run it from the
-repository root:
+from random weights on a single text, `chap4/the-time-machine.txt`: "The
+Time Machine" by H. G. Wells, in the public domain (about 41,600 tokens). It
+uses a context of 256 tokens (`GPT_CONFIG_SMALL_256`), and prints the
+training and validation losses every 5 steps. Run it from the repository
+root:
 
 ```bash
 python -m chap4.first_training
 ```
 
-It downloads nothing and saves nothing. On a MacBook with Apple Silicon, the
-10 epochs take less than a minute. Expected result: the training loss falls
-from about 9.8 to below 1, and the samples go from repeated commas to
-passages of the story. The validation loss stops improving at about 6: with
-so little data, the model memorizes the text instead of learning to
-generalize.
+It downloads nothing and saves nothing. The text gives 72 training batches
+and 9 validation batches per epoch. On a MacBook with Apple Silicon (MPS), the
+10 epochs take about 5 minutes. Observed result: the training loss falls from
+about 9.8 to below 0.2. The validation loss reaches its minimum, about 5.7,
+around epoch 4, and then rises again to about 7.2: with this little data, the
+model starts to memorize the text instead of learning to generalize.
 
 The data loader is in [`build_llm/dataloaders.py`](../build_llm/dataloaders.py).
 

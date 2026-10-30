@@ -3,7 +3,7 @@ Author: L. Saetta
 Date Last Modified: 2026-10-30
 License: Apache-2.0
 Description: A first training loop: pre-train a GPT-2 Small-sized model, from
-    random weights, on a single short text file.
+    random weights, on a single text file: "The Time Machine" by H. G. Wells.
 
 Origin: derived from the code of Chapter 5 of LLMs-from-scratch
 (https://github.com/rasbt/LLMs-from-scratch), Copyright 2023-2026 Sebastian
@@ -16,9 +16,10 @@ Run it from the repository root:
 
     python -m chap4.first_training
 
-The dataset is tiny (about 5,000 tokens) and the model large (about 163M
-parameters), so the model memorizes the text: the training loss keeps going
-down, while the validation loss soon stops improving. That is expected here.
+The dataset is small (about 41,600 tokens) and the model large (about 163M
+parameters), so the model tends to memorize the text: the training loss keeps
+going down, while the validation loss soon stops improving. That is expected
+here.
 """
 
 import sys
@@ -43,8 +44,9 @@ GPT_CONFIG_SMALL_256 = {
     "qkv_bias": False,  # Bias in the query, key, and value projections
 }
 
+# "The Time Machine" by H. G. Wells (1895), in the public domain; see NOTICE.
 # Located from this file, so that the script works from any working directory.
-TEXT_PATH = Path(__file__).resolve().parent.parent / "chap1" / "the-verdict.txt"
+TEXT_PATH = Path(__file__).resolve().parent / "the-time-machine.txt"
 
 TRAIN_RATIO = 0.90  # Fraction of the text used for training; the rest validates
 BATCH_SIZE = 2

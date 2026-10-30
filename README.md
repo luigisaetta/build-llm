@@ -181,6 +181,10 @@ which made this project possible.
   modified for this repository, and each one states its origin.
 * `chap1/the-verdict.txt` is the short story "The Verdict" by Edith Wharton
   (1908), in the public domain, taken from the same repository.
+* `chap4/the-time-machine.txt` is the novel "The Time Machine" by H. G. Wells
+  (1895), in the public domain, converted to plain text from the
+  [Standard Ebooks](https://standardebooks.org/ebooks/h-g-wells/the-time-machine)
+  edition.
 * This repository does not include text or figures from the book.
 
 The details are in [NOTICE](NOTICE).
