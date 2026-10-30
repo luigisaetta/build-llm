@@ -49,8 +49,10 @@ GPT_CONFIG_SMALL_256 = {
 TEXT_PATH = Path(__file__).resolve().parent / "the-time-machine.txt"
 
 TRAIN_RATIO = 0.90  # Fraction of the text used for training; the rest validates
-BATCH_SIZE = 2
-NUM_EPOCHS = 10
+# doubled
+BATCH_SIZE = 4
+# reduced
+NUM_EPOCHS = 6
 LEARNING_RATE = 0.0004
 WEIGHT_DECAY = 0.1
 EVAL_FREQ = 5  # Evaluate every EVAL_FREQ optimizer steps
