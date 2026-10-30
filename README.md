@@ -150,6 +150,7 @@ build-llm/
 ├── LICENSES/             # Licenses of third-party material
 ├── QUICKSTART.md         # Setup, environment check, and development checks
 ├── CONTRIBUTING.md       # How to ask questions, report problems, contribute
+├── AI_ASSISTANCE.md      # How AI assistants helped review and improve the material
 ├── NOTICE                # Attributions: what comes from where, and its license
 ├── AGENTS.md             # Rules for contributors and coding agents
 ├── pyproject.toml        # Project metadata and tool configuration
@@ -182,6 +183,9 @@ which made this project possible.
 * This repository does not include text or figures from the book.
 
 The details are in [NOTICE](NOTICE).
+
+The material was reviewed and improved with the help of AI coding assistants
+(Codex and Claude): [AI_ASSISTANCE.md](AI_ASSISTANCE.md) explains how.
 
 ## License
 
