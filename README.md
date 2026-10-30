@@ -84,7 +84,7 @@ What you find here in addition:
   using PyTorch's [MPS backend](https://pytorch.org/docs/stable/notes/mps.html)
   when it is available, and falling back to CUDA or CPU elsewhere.
 
-Some notebooks are derived from the companion repository: see
+Some notebooks and modules are derived from the companion repository: see
 [Acknowledgements and licenses](#acknowledgements-and-licenses).
 
 ## Chapters
@@ -166,8 +166,8 @@ which made this project possible.
 * The notebooks `chap1/dataloader.ipynb`, `chap2/basic_attention.ipynb`,
   `chap2/attention.ipynb`, `chap2/causal_attention.ipynb`,
   `chap2/multi_head_attention.ipynb`, `chap3/dummy_gpt.ipynb`, and
-  `chap3/gpt_step_by_step.ipynb` are derived from the notebooks of
-  LLMs-from-scratch,
+  `chap3/gpt_step_by_step.ipynb`, and the module `build_llm/gpt2.py`, are
+  derived from the notebooks of LLMs-from-scratch,
   Copyright 2023-2026 Sebastian Raschka, licensed under the
   [Apache License 2.0](LICENSES/Apache-2.0-LLMs-from-scratch.txt). They were
   modified for this repository, and each one states its origin.
@@ -180,5 +180,5 @@ The details are in [NOTICE](NOTICE).
 ## License
 
 The original code and documentation of this repository are released under
-the [MIT License](LICENSE). The derived notebooks listed above keep the
+the [MIT License](LICENSE). The derived files listed above keep the
 [Apache License 2.0](LICENSES/Apache-2.0-LLMs-from-scratch.txt).

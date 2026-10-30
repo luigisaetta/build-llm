@@ -13,11 +13,12 @@ import pytest
 REPOSITORY_ROOT = Path(__file__).resolve().parent.parent
 
 # An optional shebang, then the docstring with the four required fields.
+# Files derived from Apache-2.0 code keep that license (see NOTICE).
 HEADER_PATTERN = re.compile(
     r'(#![^\n]*\n)?"""\n'
     r"Author: L\. Saetta\n"
     r"Date Last Modified: \d{4}-\d{2}-\d{2}\n"
-    r"License: MIT\n"
+    r"License: (MIT|Apache-2\.0)\n"
     r"Description: +\S"
 )
 

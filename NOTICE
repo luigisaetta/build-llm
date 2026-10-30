@@ -13,11 +13,12 @@ Copyright: Copyright 2023-2026 Sebastian Raschka
 License:   Apache License, Version 2.0
            (a copy is in LICENSES/Apache-2.0-LLMs-from-scratch.txt)
 
-The following notebooks are derived from the notebooks of that repository,
+The following files are derived from the notebooks of that repository,
 which accompany the book "Build a Large Language Model (From Scratch)" by
 Sebastian Raschka (Manning, 2024). They were modified by Luigi Saetta: the
 explanations were rewritten and extended, and the code was adapted to this
-repository. Each notebook states its origin in its first cells.
+repository. Each file states its origin: a notebook in its first cells, a
+Python module in its docstring.
 
   chap1/dataloader.ipynb       derived from ch02/01_main-chapter-code/dataloader.ipynb
   chap2/basic_attention.ipynb  derived from ch03/01_main-chapter-code/ch03.ipynb
@@ -27,6 +28,7 @@ repository. Each notebook states its origin in its first cells.
                                derived from ch03/01_main-chapter-code/ch03.ipynb
   chap3/dummy_gpt.ipynb        derived from ch04/01_main-chapter-code/ch04.ipynb
   chap3/gpt_step_by_step.ipynb derived from ch04/01_main-chapter-code/ch04.ipynb
+  build_llm/gpt2.py            derived from the code of ch03 and ch04
 
 These files are distributed under the Apache License, Version 2.0. Changes
 made by Luigi Saetta to these files are also available under the same

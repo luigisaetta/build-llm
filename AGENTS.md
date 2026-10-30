@@ -70,6 +70,9 @@ Description: Brief description of this file's responsibilities.
 """
 ```
 
+A file derived from Apache-2.0 code uses `License: Apache-2.0` and states its
+origin in the module docstring, after the header fields.
+
 * Prefer readable names, small functions, explicit control flow, and type
   hints.
 * Use Google-style docstrings for public functions and classes, including
