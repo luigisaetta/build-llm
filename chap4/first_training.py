@@ -29,7 +29,7 @@ import torch
 
 from build_llm.dataloaders import create_dataloader_v1
 from build_llm.device import get_device
-from build_llm.gpt2 import GPTModel, generate_text_simple
+from build_llm.gpt2 import GPTModel
 
 # The dimensions of GPT-2 Small, with a context of 256 tokens instead of 1024:
 # shorter sequences make each training step faster and use less memory.
@@ -53,8 +53,6 @@ LEARNING_RATE = 0.0004
 WEIGHT_DECAY = 0.1
 EVAL_FREQ = 5  # Evaluate every EVAL_FREQ optimizer steps
 EVAL_ITER = 5  # Number of batches used for each evaluation
-START_CONTEXT = "Every effort moves you"
-SAMPLE_TOKENS = 50  # Tokens generated for the sample printed after each epoch
 
 
 #
@@ -154,33 +152,6 @@ def evaluate_model(  # pylint: disable=too-many-arguments,too-many-positional-ar
     return train_loss, val_loss
 
 
-def generate_and_print_sample(
-    model: GPTModel,
-    tokenizer: tiktoken.Encoding,
-    device: torch.device,
-    start_context: str,
-) -> None:
-    """Print a greedy continuation of start_context, to follow the training.
-
-    The model is switched to evaluation mode, then back to training mode.
-
-    Args:
-        model: The model being trained.
-        tokenizer: The GPT-2 tokenizer.
-        device: The device of the model.
-        start_context: The prompt to continue.
-    """
-    model.eval()
-    context_size = model.pos_emb.num_embeddings
-    encoded = torch.tensor([tokenizer.encode(start_context)], device=device)
-    token_ids = generate_text_simple(
-        model, encoded, max_new_tokens=SAMPLE_TOKENS, context_size=context_size
-    )
-    decoded_text = tokenizer.decode(token_ids[0].tolist())
-    print(decoded_text.replace("\n", " "))  # One line, for a compact log
-    model.train()
-
-
 #
 # Training loop
 #
@@ -194,14 +165,11 @@ def train_model_simple(  # pylint: disable=too-many-arguments,too-many-locals
     num_epochs: int,
     eval_freq: int,
     eval_iter: int,
-    start_context: str,
-    tokenizer: tiktoken.Encoding,
 ) -> tuple[list[float], list[float], list[int]]:
     """Train the model, evaluating it periodically.
 
     Every eval_freq optimizer steps, the training and validation losses are
-    computed and printed. After each epoch, a sample continuation of
-    start_context is printed.
+    computed and printed.
 
     Args:
         model: The model to train, already on device.
@@ -212,8 +180,6 @@ def train_model_simple(  # pylint: disable=too-many-arguments,too-many-locals
         num_epochs: Number of passes over the training data.
         eval_freq: Number of optimizer steps between two evaluations.
         eval_iter: Number of batches used for each evaluation.
-        start_context: The prompt of the samples printed after each epoch.
-        tokenizer: The GPT-2 tokenizer.
 
     Returns:
         The training losses, the validation losses, and the number of tokens
@@ -245,12 +211,9 @@ def train_model_simple(  # pylint: disable=too-many-arguments,too-many-locals
                 val_losses.append(val_loss)
                 track_tokens_seen.append(tokens_seen)
                 print(
-                    f"Ep {epoch+1} (Step {global_step:06d}): "
+                    f"Ep {epoch+1} (Step {global_step:05d}): "
                     f"Train loss {train_loss:.3f}, Val loss {val_loss:.3f}"
                 )
-
-        # Show what the model writes at the end of each epoch
-        generate_and_print_sample(model, tokenizer, device, start_context)
 
     return train_losses, val_losses, track_tokens_seen
 
@@ -267,6 +230,7 @@ def main() -> int:
     torch.manual_seed(123)  # Same initial weights and batch order at every run
     device = get_device()
     print(f"Device: {device}")
+    print("")
 
     model = GPTModel(GPT_CONFIG_SMALL_256)
     model.to(device)
@@ -276,8 +240,10 @@ def main() -> int:
     tokenizer = tiktoken.get_encoding("gpt2")
 
     text_data = TEXT_PATH.read_text(encoding="utf-8")
+    print("Text data:")
     print("Characters:", len(text_data))
     print("Tokens:", len(tokenizer.encode(text_data)))
+    print("")
 
     # Split by characters: the first 90% trains, the last 10% validates
     split_idx = int(TRAIN_RATIO * len(text_data))
@@ -314,8 +280,6 @@ def main() -> int:
         num_epochs=NUM_EPOCHS,
         eval_freq=EVAL_FREQ,
         eval_iter=EVAL_ITER,
-        start_context=START_CONTEXT,
-        tokenizer=tokenizer,
     )
     return 0
 
