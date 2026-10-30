@@ -3,18 +3,27 @@ Author: L. Saetta
 Date Last Modified: 2026-10-30
 License: Apache-2.0
 Description: Dataset and data loader for next-token prediction: a text is split
-    into input and target sequences with a sliding window.
+    into input and target sequences with a sliding window. Also a per-document
+    training and validation split, for datasets of several texts.
 
 Origin: derived from the code of Chapter 2 of LLMs-from-scratch
 (https://github.com/rasbt/LLMs-from-scratch), Copyright 2023-2026 Sebastian
 Raschka, licensed under the Apache License 2.0 (see
 LICENSES/Apache-2.0-LLMs-from-scratch.txt). Modified by L. Saetta (2026):
-docstrings, type hints, and input validation added; keyword-only options.
+docstrings, type hints, and input validation added; keyword-only options;
+split_documents added.
 """
+
+from collections.abc import Sequence
 
 import tiktoken
 import torch
 from torch.utils.data import DataLoader, Dataset
+
+# The GPT-2 token that marks the end of a document. Joining documents with it
+# tells the model, as in GPT-2 pre-training, where one text ends and the next
+# one begins, instead of presenting them as one continuous text.
+END_OF_TEXT = "<|endoftext|>"
 
 
 class GPTDatasetV1(Dataset):
@@ -122,3 +131,40 @@ def create_dataloader_v1(  # pylint: disable=too-many-arguments
         drop_last=drop_last,
         num_workers=num_workers,
     )
+
+
+def split_documents(
+    documents: Sequence[str], train_ratio: float, separator: str = END_OF_TEXT
+) -> tuple[str, str]:
+    """Split every document into a training and a validation part, then join them.
+
+    Each document is cut at the same fraction of its characters: the first
+    train_ratio goes to training, the rest to validation. So every document is
+    represented in both sets, in proportion to its length. Splitting the
+    concatenated text once would instead put only the end of the last document
+    in the validation set.
+
+    Args:
+        documents: The texts, for example one string per book.
+        train_ratio: Fraction of each document used for training, between 0
+            and 1, both excluded.
+        separator: Text placed between two documents; by default the GPT-2
+            end-of-text token.
+
+    Returns:
+        The training text and the validation text.
+
+    Raises:
+        ValueError: If documents is empty, or train_ratio is not between 0 and 1.
+    """
+    if not documents:
+        raise ValueError("documents must contain at least one text.")
+    if not 0 < train_ratio < 1:
+        raise ValueError("train_ratio must be between 0 and 1, both excluded.")
+
+    train_parts, val_parts = [], []
+    for document in documents:
+        split_idx = int(train_ratio * len(document))
+        train_parts.append(document[:split_idx])
+        val_parts.append(document[split_idx:])
+    return separator.join(train_parts), separator.join(val_parts)

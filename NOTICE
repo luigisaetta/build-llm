@@ -50,8 +50,40 @@ Obtained:  from https://github.com/rasbt/LLMs-from-scratch
            (ch02/01_main-chapter-code/the-verdict.txt), unchanged.
 
 
-3. Training text "the-time-machine.txt"
----------------------------------------
+3. Training texts of Chapter 4
+------------------------------
+
+File:      chap4/ethan-frome.txt
+Content:   "Ethan Frome", a novel by Edith Wharton, first published in 1911.
+           The text is in the public domain.
+Obtained:  from the Standard Ebooks edition,
+           https://standardebooks.org/ebooks/edith-wharton/ethan-frome,
+           source repository
+           https://github.com/standardebooks/edith-wharton_ethan-frome
+           at commit 2679bf28b779e6190208d52a926c64b09c08122a
+           (files src/epub/text/prologue.xhtml, chapter-1.xhtml to
+           chapter-9.xhtml, and epilogue.xhtml). Standard Ebooks dedicates
+           its contributions to the public domain under CC0 1.0.
+Changes:   converted from XHTML to plain text: one paragraph per block,
+           chapter headings kept, the line breaks of the epitaph in
+           Chapter IV kept; the 1922 introduction by the author, the title
+           page, imprint, colophon, and license page omitted; invisible
+           word joiners and typographic spaces removed.
+
+File:      chap4/heart-of-darkness.txt
+Content:   "Heart of Darkness", a novella by Joseph Conrad, first published
+           in 1899. The text is in the public domain.
+Obtained:  from the Standard Ebooks edition of Conrad's short fiction,
+           https://standardebooks.org/ebooks/joseph-conrad/short-fiction,
+           source repository
+           https://github.com/standardebooks/joseph-conrad_short-fiction
+           at commit 2deec2bda5294b3fcbf2ea79d695e4d67f21bc2d
+           (file src/epub/text/heart-of-darkness.xhtml). Standard Ebooks
+           dedicates its contributions to the public domain under CC0 1.0.
+Changes:   converted from XHTML to plain text: one paragraph per block,
+           the headings of the three parts kept, the other works of the
+           collection, the title page, imprint, colophon, and license page
+           omitted; invisible word joiners and typographic spaces removed.
 
 File:      chap4/the-time-machine.txt
 Content:   "The Time Machine", a novel by H. G. Wells, first published in

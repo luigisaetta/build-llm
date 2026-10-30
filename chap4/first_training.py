@@ -3,34 +3,38 @@ Author: L. Saetta
 Date Last Modified: 2026-10-30
 License: Apache-2.0
 Description: A first training loop: pre-train a GPT-2 Small-sized model, from
-    random weights, on a single text file: "The Time Machine" by H. G. Wells.
+    random weights, on three public-domain books: "The Time Machine" by
+    H. G. Wells, "Ethan Frome" by Edith Wharton, and "Heart of Darkness" by
+    Joseph Conrad.
 
 Origin: derived from the code of Chapter 5 of LLMs-from-scratch
 (https://github.com/rasbt/LLMs-from-scratch), Copyright 2023-2026 Sebastian
 Raschka, licensed under the Apache License 2.0 (see
 LICENSES/Apache-2.0-LLMs-from-scratch.txt). Modified by L. Saetta (2026):
 docstrings added, the data path made independent of the working directory,
-and the code organized in functions with a main entry point.
+the code organized in functions with a main entry point, and a training and
+validation split made per book.
 
 Run it from the repository root:
 
     python -m chap4.first_training
 
-The dataset is small (about 41,600 tokens) and the model large (about 163M
+The dataset is small (about 142,000 tokens) and the model large (about 163M
 parameters), so the model tends to memorize the text: the training loss keeps
 going down, while the validation loss soon stops improving. That is expected
 here.
 """
 
 import sys
+import time
 from pathlib import Path
 
 import tiktoken
 import torch
 
-from build_llm.dataloaders import create_dataloader_v1
+from build_llm.dataloaders import create_dataloader_v1, split_documents
 from build_llm.device import get_device
-from build_llm.gpt2 import GPTModel
+from build_llm.gpt2 import GPTModel, generate_text_simple
 
 # The dimensions of GPT-2 Small, with a context of 256 tokens instead of 1024:
 # shorter sequences make each training step faster and use less memory.
@@ -44,19 +48,28 @@ GPT_CONFIG_SMALL_256 = {
     "qkv_bias": False,  # Bias in the query, key, and value projections
 }
 
-# "The Time Machine" by H. G. Wells (1895), in the public domain; see NOTICE.
-# Located from this file, so that the script works from any working directory.
-TEXT_PATH = Path(__file__).resolve().parent / "the-time-machine.txt"
+# Three public-domain books, see NOTICE: "The Time Machine" by H. G. Wells
+# (1895), "Ethan Frome" by Edith Wharton (1911), and "Heart of Darkness" by
+# Joseph Conrad (1899). They are located from this file, so that the script
+# works from any working directory. Each one is split on its own into
+# training and validation text.
+TEXT_PATHS = [
+    Path(__file__).resolve().parent / "the-time-machine.txt",
+    Path(__file__).resolve().parent / "ethan-frome.txt",
+    Path(__file__).resolve().parent / "heart-of-darkness.txt",
+]
 
-TRAIN_RATIO = 0.90  # Fraction of the text used for training; the rest validates
+TRAIN_RATIO = 0.90  # Fraction of each book used for training; the rest validates
 # doubled
 BATCH_SIZE = 4
 # reduced
 NUM_EPOCHS = 6
 LEARNING_RATE = 0.0004
 WEIGHT_DECAY = 0.1
-EVAL_FREQ = 5  # Evaluate every EVAL_FREQ optimizer steps
+EVAL_FREQ = 10  # Evaluate every EVAL_FREQ optimizer steps
 EVAL_ITER = 5  # Number of batches used for each evaluation
+PROMPT_TOKENS = 50  # Tokens of the validation sample used as the prompt
+NEW_TOKENS = 50  # Tokens generated after the prompt
 
 
 #
@@ -156,6 +169,74 @@ def evaluate_model(  # pylint: disable=too-many-arguments,too-many-positional-ar
     return train_loss, val_loss
 
 
+def synchronize(device: torch.device) -> None:
+    """Wait until all the queued operations on the device are finished.
+
+    On a GPU (MPS or CUDA), PyTorch queues the operations and returns before
+    they run. Without waiting, a timer would stop before the last training
+    steps are actually done. On the CPU, operations already run in order.
+
+    Args:
+        device: The device of the model.
+    """
+    if device.type == "mps":
+        torch.mps.synchronize()
+    elif device.type == "cuda":
+        torch.cuda.synchronize(device)
+
+
+def generate_from_validation_sample(  # pylint: disable=too-many-arguments
+    model: GPTModel,
+    val_loader: torch.utils.data.DataLoader,
+    tokenizer: tiktoken.Encoding,
+    device: torch.device,
+    *,
+    prompt_tokens: int,
+    new_tokens: int,
+) -> None:
+    """Continue a random validation passage and compare it with the original.
+
+    A random sequence of the validation set is chosen; its first prompt_tokens
+    tokens are the prompt. The model generates new_tokens tokens with greedy
+    decoding, and the real continuation from the book is printed next to them.
+    The validation text was never used for training, so the model has not
+    memorized it.
+
+    Args:
+        model: The trained model, already on device.
+        val_loader: Validation batches; its dataset holds the sequences.
+        tokenizer: The GPT-2 tokenizer.
+        device: The device of the model.
+        prompt_tokens: Number of tokens of the prompt.
+        new_tokens: Number of tokens to generate.
+    """
+    dataset = val_loader.dataset
+    # torch.randint follows the seed set in main(), so the choice is repeatable
+    index = int(torch.randint(len(dataset), (1,)))
+    sequence = dataset[index][0]  # Input token IDs, shape (context_length,)
+    prompt = sequence[:prompt_tokens]
+    real_continuation = sequence[prompt_tokens : prompt_tokens + new_tokens]
+
+    model.eval()  # Disable dropout for generation
+    output = generate_text_simple(
+        model,
+        prompt.unsqueeze(0).to(device),  # Add the batch dimension: (1, tokens)
+        max_new_tokens=new_tokens,
+        context_size=model.pos_emb.num_embeddings,
+    )
+    generated = output[0, prompt_tokens:]
+
+    print(f"Validation sample {index} of {len(dataset)}")
+    print("Prompt:")
+    print(tokenizer.decode(prompt.tolist()))
+    print()
+    print("Generated continuation:")
+    print(tokenizer.decode(generated.tolist()))
+    print()
+    print("Real continuation, from the book:")
+    print(tokenizer.decode(real_continuation.tolist()))
+
+
 #
 # Training loop
 #
@@ -173,7 +254,8 @@ def train_model_simple(  # pylint: disable=too-many-arguments,too-many-locals
     """Train the model, evaluating it periodically.
 
     Every eval_freq optimizer steps, the training and validation losses are
-    computed and printed.
+    computed and printed. At the end of each epoch, its duration is printed,
+    evaluations included.
 
     Args:
         model: The model to train, already on device.
@@ -195,6 +277,7 @@ def train_model_simple(  # pylint: disable=too-many-arguments,too-many-locals
 
     for epoch in range(num_epochs):
         model.train()  # Enable dropout
+        epoch_start = time.perf_counter()
 
         for input_batch, target_batch in train_loader:
             optimizer.zero_grad()  # Reset the gradients of the previous step
@@ -219,6 +302,10 @@ def train_model_simple(  # pylint: disable=too-many-arguments,too-many-locals
                     f"Train loss {train_loss:.3f}, Val loss {val_loss:.3f}"
                 )
 
+        synchronize(device)  # Count the steps still running on the GPU
+        epoch_seconds = time.perf_counter() - epoch_start
+        print(f"Epoch {epoch + 1} completed in {epoch_seconds:.1f} s")
+
     return train_losses, val_losses, track_tokens_seen
 
 
@@ -226,7 +313,7 @@ def train_model_simple(  # pylint: disable=too-many-arguments,too-many-locals
 # Main
 #
 def main() -> int:
-    """Train the model on the text file and print the progress.
+    """Train the model on the books, print the progress, then generate text.
 
     Returns:
         The exit code: 0 on success.
@@ -243,19 +330,29 @@ def main() -> int:
     )
     tokenizer = tiktoken.get_encoding("gpt2")
 
-    text_data = TEXT_PATH.read_text(encoding="utf-8")
+    books = [path.read_text(encoding="utf-8") for path in TEXT_PATHS]
     print("Text data:")
-    print("Characters:", len(text_data))
-    print("Tokens:", len(tokenizer.encode(text_data)))
+    for path, book in zip(TEXT_PATHS, books):
+        print(
+            f"  {path.name}: {len(book):,} characters, "
+            f"{len(tokenizer.encode(book)):,} tokens"
+        )
+
+    # Split each book on its own: the first 90% of every book trains, the last
+    # 10% validates. Splitting the concatenated text once would put only the
+    # end of the last book in the validation set. Inside each set, the books
+    # are separated by the GPT-2 end-of-text token.
+    train_text, val_text = split_documents(books, TRAIN_RATIO)
+    for name, text in (("Training", train_text), ("Validation", val_text)):
+        tokens = tokenizer.encode(text, allowed_special={"<|endoftext|>"})
+        print(f"  {name} set: {len(tokens):,} tokens")
     print("")
 
-    # Split by characters: the first 90% trains, the last 10% validates
-    split_idx = int(TRAIN_RATIO * len(text_data))
     context_length = GPT_CONFIG_SMALL_256["context_length"]
 
     train_loader = create_dataloader_v1(
         tokenizer,
-        text_data[:split_idx],
+        train_text,
         batch_size=BATCH_SIZE,
         max_length=context_length,
         stride=context_length,
@@ -265,7 +362,7 @@ def main() -> int:
     )
     val_loader = create_dataloader_v1(
         tokenizer,
-        text_data[split_idx:],
+        val_text,
         batch_size=BATCH_SIZE,
         max_length=context_length,
         stride=context_length,
@@ -284,6 +381,16 @@ def main() -> int:
         num_epochs=NUM_EPOCHS,
         eval_freq=EVAL_FREQ,
         eval_iter=EVAL_ITER,
+    )
+
+    print("")
+    generate_from_validation_sample(
+        model,
+        val_loader,
+        tokenizer,
+        device,
+        prompt_tokens=PROMPT_TOKENS,
+        new_tokens=NEW_TOKENS,
     )
     return 0
 

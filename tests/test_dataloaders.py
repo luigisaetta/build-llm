@@ -6,9 +6,15 @@ Description: Tests for the next-token prediction dataset and data loader.
 """
 
 import pytest
+import tiktoken
 import torch
 
-from build_llm.dataloaders import GPTDatasetV1, create_dataloader_v1
+from build_llm.dataloaders import (
+    END_OF_TEXT,
+    GPTDatasetV1,
+    create_dataloader_v1,
+    split_documents,
+)
 
 
 class CharacterTokenizer:  # pylint: disable=too-few-public-methods
@@ -86,3 +92,39 @@ def test_dataloader_options_are_keyword_only():
     with pytest.raises(TypeError):
         create_dataloader_v1(CharacterTokenizer(), TEXT, 4, 4, 1)
     # pylint: enable=too-many-function-args,missing-kwoa
+
+
+def test_split_documents_keeps_every_document_in_both_sets():
+    """Each document contributes its start to training and its end to validation."""
+    # 8 characters * 0.75 = 6 for training; 4 * 0.75 = 3
+    train, val = split_documents(["aaaaaaAA", "bbbB"], train_ratio=0.75)
+
+    assert train == "aaaaaa" + END_OF_TEXT + "bbb"
+    assert val == "AA" + END_OF_TEXT + "B"
+
+
+def test_split_documents_custom_separator():
+    """The separator between documents can be chosen."""
+    train, val = split_documents(["abcd", "efgh"], train_ratio=0.5, separator="|")
+
+    assert (train, val) == ("ab|ef", "cd|gh")
+
+
+@pytest.mark.network
+def test_end_of_text_is_a_single_gpt2_token():
+    """The separator is encoded as the GPT-2 end-of-text token, ID 50256.
+
+    tiktoken may download the GPT-2 encoding the first time.
+    """
+    tokenizer = tiktoken.get_encoding("gpt2")
+
+    assert tokenizer.encode(END_OF_TEXT, allowed_special={END_OF_TEXT}) == [50256]
+
+
+@pytest.mark.parametrize(
+    ("documents", "train_ratio"), [([], 0.9), (["text"], 0.0), (["text"], 1.0)]
+)
+def test_split_documents_rejects_invalid_inputs(documents, train_ratio):
+    """An empty list or a ratio outside (0, 1) raises an error."""
+    with pytest.raises(ValueError):
+        split_documents(documents, train_ratio)

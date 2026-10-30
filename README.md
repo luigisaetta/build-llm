@@ -98,7 +98,7 @@ The chapter numbers of this repository differ from the book.
 | [Chap 1](chap1/README.md) | Text data and tokenization | The Tokenizer explorer (web UI and CLI), and a notebook on the data loader for next-token prediction | 2 |
 | [Chap 2](chap2/README.md) | Self-attention | Four notebooks: simplified attention, scaled attention with trainable query, key, and value projections, causal attention with dropout, and multi-head attention | 3 |
 | [Chap 3](chap3/README.md) | GPT architecture | Two notebooks: a dummy GPT model, from token IDs to logits, and the complete GPT-2-like model built step by step, with its architecture diagram and parameter count | 4 |
-| [Chap 4](chap4/README.md) | Pretrained weights and first training | A notebook that loads the GPT-2 Small weights from Hugging Face, without TensorFlow, and generates text; a script that trains the model from random weights on "The Time Machine" by H. G. Wells, tracking the training and validation losses | 5 |
+| [Chap 4](chap4/README.md) | Pretrained weights and first training | A notebook that loads the GPT-2 Small weights from Hugging Face, without TensorFlow, and generates text; a script that trains the model from random weights on three public-domain books, "The Time Machine", "Ethan Frome", and "Heart of Darkness", tracking the training and validation losses | 5 |
 
 ## Getting started
 
@@ -128,7 +128,7 @@ start from [Chapter 1](chap1/README.md).
 - 🚧 **Text generation**: greedy decoding ([Chapter 4](chap4/README.md));
   next, temperature and top-k sampling.
 - 🚧 **Pre-training**: cross-entropy loss and a training loop with AdamW, on
-  a single public-domain text
+  three public-domain books, with a training and validation split per book
   ([`chap4/first_training.py`](chap4/first_training.py)); next, saving and
   loading checkpoints.
 - 🚧 **Evaluation**: training and validation loss during training, which show
@@ -191,6 +191,14 @@ which made this project possible.
   (1895), in the public domain, converted to plain text from the
   [Standard Ebooks](https://standardebooks.org/ebooks/h-g-wells/the-time-machine)
   edition.
+* `chap4/ethan-frome.txt` is the novel "Ethan Frome" by Edith Wharton (1911),
+  in the public domain, converted to plain text from the
+  [Standard Ebooks](https://standardebooks.org/ebooks/edith-wharton/ethan-frome)
+  edition.
+* `chap4/heart-of-darkness.txt` is the novella "Heart of Darkness" by Joseph
+  Conrad (1899), in the public domain, converted to plain text from the
+  [Standard Ebooks](https://standardebooks.org/ebooks/joseph-conrad/short-fiction)
+  edition of his short fiction.
 * This repository does not include text or figures from the book.
 
 The details are in [NOTICE](NOTICE).
