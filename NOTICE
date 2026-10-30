@@ -29,6 +29,8 @@ Python module in its docstring.
   chap3/dummy_gpt.ipynb        derived from ch04/01_main-chapter-code/ch04.ipynb
   chap3/gpt_step_by_step.ipynb derived from ch04/01_main-chapter-code/ch04.ipynb
   build_llm/gpt2.py            derived from the code of ch03 and ch04
+  build_llm/dataloaders.py     derived from the code of ch02
+  chap4/first_training.py      derived from the code of ch05
 
 These files are distributed under the Apache License, Version 2.0. Changes
 made by Luigi Saetta to these files are also available under the same

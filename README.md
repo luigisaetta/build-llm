@@ -173,7 +173,8 @@ which made this project possible.
 * The notebooks `chap1/dataloader.ipynb`, `chap2/basic_attention.ipynb`,
   `chap2/attention.ipynb`, `chap2/causal_attention.ipynb`,
   `chap2/multi_head_attention.ipynb`, `chap3/dummy_gpt.ipynb`, and
-  `chap3/gpt_step_by_step.ipynb`, and the module `build_llm/gpt2.py`, are
+  `chap3/gpt_step_by_step.ipynb`, the modules `build_llm/gpt2.py` and
+  `build_llm/dataloaders.py`, and the script `chap4/first_training.py` are
   derived from the notebooks of LLMs-from-scratch,
   Copyright 2023-2026 Sebastian Raschka, licensed under the
   [Apache License 2.0](LICENSES/Apache-2.0-LLMs-from-scratch.txt). They were

@@ -31,6 +31,28 @@ The reusable code is in the `build_llm` package:
   Small configuration, the download with checksum verification, and the
   conversion of the weights.
 
+## A first training run
+
+[`first_training.py`](first_training.py) trains a GPT-2 Small-sized model
+from random weights on a single short text, `chap1/the-verdict.txt` (about
+5,000 tokens), with a context of 256 tokens (`GPT_CONFIG_SMALL_256`). It
+prints the training and validation losses every 5 steps, and a greedy
+continuation of "Every effort moves you" after each epoch. Run it from the
+repository root:
+
+```bash
+python -m chap4.first_training
+```
+
+It downloads nothing and saves nothing. On a MacBook with Apple Silicon, the
+10 epochs take less than a minute. Expected result: the training loss falls
+from about 9.8 to below 1, and the samples go from repeated commas to
+passages of the story. The validation loss stops improving at about 6: with
+so little data, the model memorizes the text instead of learning to
+generalize.
+
+The data loader is in [`build_llm/dataloaders.py`](../build_llm/dataloaders.py).
+
 ## Prerequisites
 
 * The `build-llm` Conda environment, with the dependencies and the editable
