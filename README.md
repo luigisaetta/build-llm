@@ -20,8 +20,8 @@ so that you can understand *why* it works, not only *that* it works.
 
 > **Status: work in progress.** Chapters 0 to 3 are available: environment,
 > tokenization and data loading, attention up to multi-head causal attention,
-> and a first, dummy skeleton of the GPT model. New chapters are added as the project grows; see the
-> [roadmap](#roadmap).
+> and the architecture of a GPT-2-like model. New chapters are added as the
+> project grows; see the [roadmap](#roadmap).
 
 <p align="center">
   <img src="images/tokenizer-demo.png" alt="The Tokenizer explorer: choose a GPT tokenizer, paste a text, and see it split into colored tokens with their counts" width="800">
@@ -96,7 +96,7 @@ The chapter numbers of this repository differ from the book.
 | [Chap 0](chap0/README.md) | Environment | A check of Python, packages, and MPS acceleration | — |
 | [Chap 1](chap1/README.md) | Text data and tokenization | The Tokenizer explorer (web UI and CLI), and a notebook on the data loader for next-token prediction | 2 |
 | [Chap 2](chap2/README.md) | Self-attention | Four notebooks: simplified attention, scaled attention with trainable query, key, and value projections, causal attention with dropout, and multi-head attention | 3 |
-| [Chap 3](chap3/README.md) | GPT architecture | A notebook with a dummy GPT model, from token IDs to logits, and the parameter count of the full architecture | 4 |
+| [Chap 3](chap3/README.md) | GPT architecture | Two notebooks: a dummy GPT model, from token IDs to logits, and the complete GPT-2-like model built step by step, with its architecture diagram and parameter count | 4 |
 
 ## Getting started
 
@@ -119,9 +119,9 @@ start from [Chapter 1](chap1/README.md).
 - ✅ **Attention**: simplified self-attention, trainable query, key, and
   value projections, causal attention with dropout, and multi-head attention
   ([Chapter 2](chap2/README.md)).
-- 🚧 **GPT architecture**: the model skeleton and its parameter count
-  ([Chapter 3](chap3/README.md)); next, layer normalization, feed-forward
-  blocks, transformer blocks, and the full GPT model.
+- ✅ **GPT architecture**: layer normalization, GELU, feed-forward blocks,
+  transformer blocks, and the full GPT model, with its parameter count
+  ([Chapter 3](chap3/README.md)).
 - ⬜ **Text generation**: greedy decoding, temperature, top-k sampling.
 - ⬜ **Pre-training**: loss computation, training loop, checkpoints.
 - ⬜ **Evaluation**: training and validation loss, perplexity.
@@ -165,7 +165,8 @@ which made this project possible.
 
 * The notebooks `chap1/dataloader.ipynb`, `chap2/basic_attention.ipynb`,
   `chap2/attention.ipynb`, `chap2/causal_attention.ipynb`,
-  `chap2/multi_head_attention.ipynb`, and `chap3/dummy_gpt.ipynb` are derived from the notebooks of
+  `chap2/multi_head_attention.ipynb`, `chap3/dummy_gpt.ipynb`, and
+  `chap3/gpt_step_by_step.ipynb` are derived from the notebooks of
   LLMs-from-scratch,
   Copyright 2023-2026 Sebastian Raschka, licensed under the
   [Apache License 2.0](LICENSES/Apache-2.0-LLMs-from-scratch.txt). They were
