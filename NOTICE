@@ -53,6 +53,56 @@ Obtained:  from https://github.com/rasbt/LLMs-from-scratch
 3. Training texts of Chapter 4
 ------------------------------
 
+File:      chap4/a-christmas-carol.txt
+Content:   "A Christmas Carol", a novella by Charles Dickens, first
+           published in 1843. The text is in the public domain.
+Obtained:  from the Standard Ebooks edition,
+           https://standardebooks.org/ebooks/charles-dickens/a-christmas-carol,
+           source repository
+           https://github.com/standardebooks/charles-dickens_a-christmas-carol
+           at commit fbcca8acb37169bbb560b8796c1f05b0240f6792 (files
+           src/epub/text/chapter-1.xhtml to chapter-5.xhtml). Standard
+           Ebooks dedicates its contributions to the public domain under
+           CC0 1.0.
+Changes:   converted from XHTML to plain text: one paragraph per block, the
+           headings of the five staves kept with their titles; the preface
+           by the author, the title page, imprint, colophon, and license
+           page omitted; invisible word joiners and typographic spaces
+           removed.
+
+File:      chap4/dr-jekyll-and-mr-hyde.txt
+Content:   "The Strange Case of Dr. Jekyll and Mr. Hyde", a novella by
+           Robert Louis Stevenson, first published in 1886. The text is in
+           the public domain.
+Obtained:  from the Standard Ebooks edition,
+           https://standardebooks.org/ebooks/robert-louis-stevenson/the-strange-case-of-dr-jekyll-and-mr-hyde,
+           source repository
+           https://github.com/standardebooks/robert-louis-stevenson_the-strange-case-of-dr-jekyll-and-mr-hyde
+           at commit bb6ccb4d19e94d71588dbacbd3a48aa6cd1846ed (files
+           src/epub/text/chapter-1.xhtml to chapter-10.xhtml). Standard
+           Ebooks dedicates its contributions to the public domain under
+           CC0 1.0.
+Changes:   converted from XHTML to plain text: one paragraph per block,
+           chapter titles kept; the title page, imprint, colophon, and
+           license page omitted; invisible word joiners and typographic
+           spaces removed.
+
+File:      chap4/dracula.txt
+Content:   "Dracula", a novel by Bram Stoker, first published in 1897. The
+           text is in the public domain.
+Obtained:  from the Standard Ebooks edition,
+           https://standardebooks.org/ebooks/bram-stoker/dracula, source
+           repository https://github.com/standardebooks/bram-stoker_dracula
+           at commit e9968b274918e5a79b8e34cc93e50492363d1612 (28 files of
+           src/epub/text, from chapter-1.xhtml to epilogue.xhtml, in the
+           reading order of src/epub/content.opf). Standard Ebooks
+           dedicates its contributions to the public domain under CC0 1.0.
+Changes:   converted from XHTML to plain text: one paragraph per block,
+           headings kept; only the files marked as bodymatter kept, so the
+           front and back matter of the edition (such as title page,
+           imprint, colophon, and license page) omitted; invisible word
+           joiners and typographic spaces removed.
+
 File:      chap4/ethan-frome.txt
 Content:   "Ethan Frome", a novel by Edith Wharton, first published in 1911.
            The text is in the public domain.
@@ -70,6 +120,25 @@ Changes:   converted from XHTML to plain text: one paragraph per block,
            page, imprint, colophon, and license page omitted; invisible
            word joiners and typographic spaces removed.
 
+File:      chap4/frankenstein.txt
+Content:   "Frankenstein; or, The Modern Prometheus", a novel by Mary
+           Shelley, first published in 1818. The text is in the public
+           domain.
+Obtained:  from the Standard Ebooks edition,
+           https://standardebooks.org/ebooks/mary-shelley/frankenstein,
+           source repository
+           https://github.com/standardebooks/mary-shelley_frankenstein at
+           commit 3909a2b9d956377e797e235562cd237d3667fa9b (28 files of
+           src/epub/text, from letter-1.xhtml to chapter-24.xhtml, in the
+           reading order of src/epub/content.opf). Standard Ebooks
+           dedicates its contributions to the public domain under CC0 1.0.
+Changes:   converted from XHTML to plain text: one paragraph per block,
+           headings kept; only the files marked as bodymatter kept, so the
+           front and back matter of the edition (such as title page,
+           imprint, colophon, and license page) omitted; endnotes and their
+           references omitted; invisible word joiners and typographic
+           spaces removed.
+
 File:      chap4/heart-of-darkness.txt
 Content:   "Heart of Darkness", a novella by Joseph Conrad, first published
            in 1899. The text is in the public domain.
@@ -84,6 +153,57 @@ Changes:   converted from XHTML to plain text: one paragraph per block,
            the headings of the three parts kept, the other works of the
            collection, the title page, imprint, colophon, and license page
            omitted; invisible word joiners and typographic spaces removed.
+
+File:      chap4/pride-and-prejudice.txt
+Content:   "Pride and Prejudice", a novel by Jane Austen, first published
+           in 1813. The text is in the public domain.
+Obtained:  from the Standard Ebooks edition,
+           https://standardebooks.org/ebooks/jane-austen/pride-and-prejudice,
+           source repository
+           https://github.com/standardebooks/jane-austen_pride-and-prejudice
+           at commit ed94a32be3e875c0814568050c7544e03aad3ef5 (61 files of
+           src/epub/text, from chapter-1.xhtml to chapter-61.xhtml, in the
+           reading order of src/epub/content.opf). Standard Ebooks
+           dedicates its contributions to the public domain under CC0 1.0.
+Changes:   converted from XHTML to plain text: one paragraph per block,
+           headings kept; only the files marked as bodymatter kept, so the
+           front and back matter of the edition (such as title page,
+           imprint, colophon, and license page) omitted; invisible word
+           joiners and typographic spaces removed.
+
+File:      chap4/the-hound-of-the-baskervilles.txt
+Content:   "The Hound of the Baskervilles", a novel by Arthur Conan Doyle,
+           first published in 1902. The text is in the public domain.
+Obtained:  from the Standard Ebooks edition,
+           https://standardebooks.org/ebooks/arthur-conan-doyle/the-hound-of-the-baskervilles,
+           source repository
+           https://github.com/standardebooks/arthur-conan-doyle_the-hound-of-the-baskervilles
+           at commit 0097160e42afc58fa86337b8496de440267cf831 (15 files of
+           src/epub/text, from chapter-1.xhtml to chapter-15.xhtml, in the
+           reading order of src/epub/content.opf). Standard Ebooks
+           dedicates its contributions to the public domain under CC0 1.0.
+Changes:   converted from XHTML to plain text: one paragraph per block,
+           headings kept; only the files marked as bodymatter kept, so the
+           front and back matter of the edition (such as title page,
+           imprint, colophon, and license page) omitted; invisible word
+           joiners and typographic spaces removed.
+
+File:      chap4/the-picture-of-dorian-gray.txt
+Content:   "The Picture of Dorian Gray", a novel by Oscar Wilde, first
+           published in 1890. The text is in the public domain.
+Obtained:  from the Standard Ebooks edition,
+           https://standardebooks.org/ebooks/oscar-wilde/the-picture-of-dorian-gray,
+           source repository
+           https://github.com/standardebooks/oscar-wilde_the-picture-of-dorian-gray
+           at commit c6b6877688d7652e74c3db4e21322adcb27cadcd (20 files of
+           src/epub/text, from chapter-1.xhtml to chapter-20.xhtml, in the
+           reading order of src/epub/content.opf). Standard Ebooks
+           dedicates its contributions to the public domain under CC0 1.0.
+Changes:   converted from XHTML to plain text: one paragraph per block,
+           headings kept; only the files marked as bodymatter kept, so the
+           front and back matter of the edition (such as title page,
+           imprint, colophon, and license page) omitted; invisible word
+           joiners and typographic spaces removed.
 
 File:      chap4/the-time-machine.txt
 Content:   "The Time Machine", a novel by H. G. Wells, first published in
@@ -100,6 +220,42 @@ Changes:   converted from XHTML to plain text: one paragraph per block,
            chapter headings kept, the title page, imprint, colophon,
            license page, and the one endnote with its reference omitted,
            and invisible word joiners and typographic spaces removed.
+
+File:      chap4/the-war-of-the-worlds.txt
+Content:   "The War of the Worlds", a novel by H. G. Wells, first published
+           in 1898. The text is in the public domain.
+Obtained:  from the Standard Ebooks edition,
+           https://standardebooks.org/ebooks/h-g-wells/the-war-of-the-worlds,
+           source repository
+           https://github.com/standardebooks/h-g-wells_the-war-of-the-worlds
+           at commit 7c2c332ce1ce8025d07ec982b02dad293dc63671 (files
+           src/epub/text/book-1.xhtml, chapter-1-1.xhtml to
+           chapter-1-17.xhtml, book-2.xhtml, and chapter-2-1.xhtml to
+           chapter-2-10.xhtml). Standard Ebooks dedicates its contributions
+           to the public domain under CC0 1.0.
+Changes:   converted from XHTML to plain text: one paragraph per block, the
+           headings of the two books and of the chapters kept with their
+           titles; the epigraph, dedication, title page, imprint, colophon,
+           and license page omitted; invisible word joiners and typographic
+           spaces removed.
+
+File:      chap4/treasure-island.txt
+Content:   "Treasure Island", a novel by Robert Louis Stevenson, first
+           published in 1883. The text is in the public domain.
+Obtained:  from the Standard Ebooks edition,
+           https://standardebooks.org/ebooks/robert-louis-stevenson/treasure-island,
+           source repository
+           https://github.com/standardebooks/robert-louis-stevenson_treasure-island
+           at commit 86380ddddb73e7b22a41405cf8b70e72bcaf2d30 (40 files of
+           src/epub/text, from part-1.xhtml to chapter-34.xhtml, in the
+           reading order of src/epub/content.opf). Standard Ebooks
+           dedicates its contributions to the public domain under CC0 1.0.
+Changes:   converted from XHTML to plain text: one paragraph per block,
+           headings kept; only the files marked as bodymatter kept, so the
+           front and back matter of the edition (such as title page,
+           imprint, colophon, and license page) omitted; endnotes and their
+           references omitted; invisible word joiners and typographic
+           spaces removed.
 
 
 4. Original code of this repository

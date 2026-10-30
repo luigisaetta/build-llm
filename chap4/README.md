@@ -34,15 +34,25 @@ The reusable code is in the `build_llm` package:
 ## A first training run
 
 [`first_training.py`](first_training.py) trains a GPT-2 Small-sized model
-from random weights on three public-domain books, about 142,000 tokens in
-all:
+from random weights on twelve public-domain books, about 1,050,000 tokens in
+all. The texts are in `chap4/`, converted to plain text from the
+[Standard Ebooks](https://standardebooks.org/) editions; their sources are in
+[NOTICE](../NOTICE).
 
-* `chap4/the-time-machine.txt`: "The Time Machine" by H. G. Wells (about
-  41,600 tokens);
-* `chap4/ethan-frome.txt`: "Ethan Frome" by Edith Wharton (about 48,700
-  tokens);
-* `chap4/heart-of-darkness.txt`: "Heart of Darkness" by Joseph Conrad (about
-  51,700 tokens).
+| File | Book | Tokens |
+| --- | --- | --- |
+| `the-time-machine.txt` | "The Time Machine", H. G. Wells, 1895 | 41,578 |
+| `ethan-frome.txt` | "Ethan Frome", Edith Wharton, 1911 | 48,728 |
+| `heart-of-darkness.txt` | "Heart of Darkness", Joseph Conrad, 1899 | 51,678 |
+| `the-war-of-the-worlds.txt` | "The War of the Worlds", H. G. Wells, 1898 | 78,344 |
+| `dr-jekyll-and-mr-hyde.txt` | "The Strange Case of Dr. Jekyll and Mr. Hyde", Robert Louis Stevenson, 1886 | 34,798 |
+| `a-christmas-carol.txt` | "A Christmas Carol", Charles Dickens, 1843 | 42,162 |
+| `pride-and-prejudice.txt` | "Pride and Prejudice", Jane Austen, 1813 | 161,830 |
+| `frankenstein.txt` | "Frankenstein", Mary Shelley, 1818 | 95,169 |
+| `dracula.txt` | "Dracula", Bram Stoker, 1897 | 209,600 |
+| `the-picture-of-dorian-gray.txt` | "The Picture of Dorian Gray", Oscar Wilde, 1890 | 109,030 |
+| `the-hound-of-the-baskervilles.txt` | "The Hound of the Baskervilles", Arthur Conan Doyle, 1902 | 80,861 |
+| `treasure-island.txt` | "Treasure Island", Robert Louis Stevenson, 1883 | 97,767 |
 
 **The split is made per book**: the first 90% of each book goes to training
 and the last 10% to validation, with `split_documents` of
@@ -62,18 +72,21 @@ root:
 python -m chap4.first_training
 ```
 
-It downloads nothing and saves nothing. The training set has about 127,200
-tokens (124 batches of 4 sequences per epoch), the validation set about
-14,800 tokens (15 batches). Expected result: the training loss falls steadily, while
-the validation loss reaches a minimum after a few epochs and then rises
-again. With this little data the model starts to memorize the text instead of
-learning to generalize.
+It downloads nothing and saves nothing. The training set has about 946,500
+tokens (924 batches of 4 sequences per epoch), the validation set about
+105,000 tokens (103 batches). An epoch has about 3.5 times the batches of the
+six-book run, so it takes about 3.5 times longer. Expected result: the
+training loss falls steadily. The validation loss should keep improving for
+longer than with fewer books, but about one million tokens is still little
+for a model of this size: after enough epochs it reaches a minimum and rises
+again, as the model starts to memorize the text instead of learning to
+generalize.
 
 With "The Time Machine" alone (10 epochs, batches of 2 sequences), the run
 took about 5 minutes on a MacBook with Apple Silicon (MPS): the training loss
 fell from about 9.8 to below 0.2, and the validation loss reached its
 minimum, about 5.7, around epoch 4, before rising to about 7.2. The run with
-the three books has not been recorded yet.
+the twelve books has not been recorded yet.
 
 The data loader is in [`build_llm/dataloaders.py`](../build_llm/dataloaders.py).
 

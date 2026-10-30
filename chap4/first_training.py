@@ -3,9 +3,7 @@ Author: L. Saetta
 Date Last Modified: 2026-10-30
 License: Apache-2.0
 Description: A first training loop: pre-train a GPT-2 Small-sized model, from
-    random weights, on three public-domain books: "The Time Machine" by
-    H. G. Wells, "Ethan Frome" by Edith Wharton, and "Heart of Darkness" by
-    Joseph Conrad.
+    random weights, on twelve public-domain books (see TEXT_PATHS and NOTICE).
 
 Origin: derived from the code of Chapter 5 of LLMs-from-scratch
 (https://github.com/rasbt/LLMs-from-scratch), Copyright 2023-2026 Sebastian
@@ -19,10 +17,10 @@ Run it from the repository root:
 
     python -m chap4.first_training
 
-The dataset is small (about 142,000 tokens) and the model large (about 163M
-parameters), so the model tends to memorize the text: the training loss keeps
-going down, while the validation loss soon stops improving. That is expected
-here.
+The dataset (about 1,050,000 tokens) is still small for a model of about 163M
+parameters, so after some epochs the model tends to memorize the text: the
+training loss keeps going down, while the validation loss stops improving.
+That is expected here.
 """
 
 import sys
@@ -48,15 +46,23 @@ GPT_CONFIG_SMALL_256 = {
     "qkv_bias": False,  # Bias in the query, key, and value projections
 }
 
-# Three public-domain books, see NOTICE: "The Time Machine" by H. G. Wells
-# (1895), "Ethan Frome" by Edith Wharton (1911), and "Heart of Darkness" by
-# Joseph Conrad (1899). They are located from this file, so that the script
-# works from any working directory. Each one is split on its own into
-# training and validation text.
+# Twelve public-domain books, about 1,050,000 tokens in all; see NOTICE. They
+# are located from this file, so that the script works from any working
+# directory. Each one is split on its own into training and validation text.
+BOOKS_DIR = Path(__file__).resolve().parent
 TEXT_PATHS = [
-    Path(__file__).resolve().parent / "the-time-machine.txt",
-    Path(__file__).resolve().parent / "ethan-frome.txt",
-    Path(__file__).resolve().parent / "heart-of-darkness.txt",
+    BOOKS_DIR / "the-time-machine.txt",  # H. G. Wells, 1895
+    BOOKS_DIR / "ethan-frome.txt",  # Edith Wharton, 1911
+    BOOKS_DIR / "heart-of-darkness.txt",  # Joseph Conrad, 1899
+    BOOKS_DIR / "the-war-of-the-worlds.txt",  # H. G. Wells, 1898
+    BOOKS_DIR / "dr-jekyll-and-mr-hyde.txt",  # Robert Louis Stevenson, 1886
+    BOOKS_DIR / "a-christmas-carol.txt",  # Charles Dickens, 1843
+    BOOKS_DIR / "pride-and-prejudice.txt",  # Jane Austen, 1813
+    BOOKS_DIR / "frankenstein.txt",  # Mary Shelley, 1818
+    BOOKS_DIR / "dracula.txt",  # Bram Stoker, 1897
+    BOOKS_DIR / "the-picture-of-dorian-gray.txt",  # Oscar Wilde, 1890
+    BOOKS_DIR / "the-hound-of-the-baskervilles.txt",  # Arthur Conan Doyle, 1902
+    BOOKS_DIR / "treasure-island.txt",  # Robert Louis Stevenson, 1883
 ]
 
 TRAIN_RATIO = 0.90  # Fraction of each book used for training; the rest validates
