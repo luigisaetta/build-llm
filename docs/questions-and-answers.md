@@ -17,6 +17,9 @@ idea, not the full theory.
   * [What are the advantages of SelfAttention_v2 over SelfAttention_v1?](#what-are-the-advantages-of-selfattention_v2-over-selfattention_v1)
 * [Chapter 3: the GPT model architecture](#chapter-3-the-gpt-model-architecture)
   * [What are the logits produced by the GPT model?](#what-are-the-logits-produced-by-the-gpt-model)
+* [Chapter 4: pretrained weights and training](#chapter-4-pretrained-weights-and-training)
+  * [What is gradient clipping, and why does it help our training?](#what-is-gradient-clipping-and-why-does-it-help-our-training)
+  * [Which learning rate schedules have we implemented, and why?](#which-learning-rate-schedules-have-we-implemented-and-why)
 
 ## Chapter 0: the environment
 
@@ -289,3 +292,95 @@ Some details:
 In the dummy model the weights are random and the transformer blocks do
 nothing, so its logits are meaningless; the shape, however, is already the
 final one.
+
+## Chapter 4: pretrained weights and training
+
+### What is gradient clipping, and why does it help our training?
+
+At each step, the gradient tells the optimizer in which **direction** to move
+every parameter, and its size tells **how far**. Gradient clipping limits the
+size, not the direction: it computes one norm over all the gradients of the
+model together, and if the norm is larger than a threshold, it scales all the
+gradients down by the same factor.
+
+```text
+norm = sqrt(sum of the squares of all the gradients)
+if norm > max_norm:
+    every gradient = gradient * max_norm / norm
+```
+
+In [`chap4/first_training.py`](../chap4/first_training.py) it is one line,
+between `loss.backward()` and `optimizer.step()`, with `max_norm = 1.0`
+(`GRAD_CLIP_NORM`), the usual value for GPT models:
+
+```python
+torch.nn.utils.clip_grad_norm_(model.parameters(), GRAD_CLIP_NORM)
+```
+
+Why it helps in our case:
+
+* **Our batches are tiny.** Each step sees 4 sequences of 256 tokens, about
+  1,000 tokens; GPT-2 used about half a million. The gradient of a small
+  batch is noisy, and now and then an unusual batch (rare words, a long
+  dialogue, the start of a new book) gives a gradient many times larger than
+  usual.
+* **One very large step can undo many small ones.** It moves the weights far
+  from where they were improving, and the loss jumps up: a *loss spike*. In
+  the worst case the training diverges and the loss becomes `nan`.
+* **AdamW does not fully protect against it.** It divides each update by a
+  running average of the squared gradients, but with `beta2 = 0.999` that
+  average reacts slowly, so a sudden spike still passes through.
+* **It changes almost nothing when the training is healthy.** Clipping acts
+  only on the rare steps above the threshold.
+
+Two notes. Clipping is a safety net, not a cure: if the norm is clipped at
+almost every step, the learning rate is probably too high. And with gradient
+accumulation, the clipping goes after the last micro-batch, on the
+accumulated gradient, just before the optimizer step.
+
+### Which learning rate schedules have we implemented, and why?
+
+The learning rate is the size of the steps of the optimizer. Today
+`chap4/first_training.py` keeps it **constant**, at 4e-4, from the first step
+to the last. [`build_llm/lr_schedule.py`](../build_llm/lr_schedule.py) adds
+two schedules, not yet used by the script, that change it during training.
+Both start with a **linear warmup**:
+
+* **Warmup.** In the first steps (typically 1–2% of them) the learning rate
+  grows linearly from almost 0 to its peak. At the start the weights are
+  random, the gradients are large, and the AdamW running averages are not
+  reliable yet: small steps avoid unstable updates.
+
+After the warmup:
+
+| Schedule | Shape | Total steps |
+| --- | --- | --- |
+| `"cosine"` | decreases along half a cosine wave, from the peak to the minimum at the last step | fixed from the start: they set the shape of the whole curve |
+| `"wsd"` (warmup, stable, decay) | stays at the peak, then decreases linearly to the minimum in the last part of the steps (`decay_fraction`, for example 20%) | can still change until the decay starts |
+
+Why decrease the learning rate at the end: large steps explore fast but
+"bounce" around a good solution; small steps settle into it. Both schedules
+usually reach a lower loss than a constant learning rate.
+
+Why two schedules:
+
+* **Cosine** is the classic choice, used for example by GPT-3 and in the
+  appendix of the book on training improvements. It needs the length of the
+  training from the start.
+* **WSD** fits our situation better: on a laptop, an epoch takes about an
+  hour, and we may decide to stop early or to train longer. With WSD the run
+  can be extended while it is in the stable phase, and from any checkpoint of
+  that phase a short decay gives a finished model.
+
+Both schedules are a **pure function of the optimizer step**:
+
+```python
+lr = learning_rate(step, schedule="wsd", peak_lr=4e-4, min_lr=4e-5,
+                   warmup_steps=1_000, total_steps=53_070)
+```
+
+There is no scheduler state to save: a training resumed from a checkpoint
+gets exactly the same learning rates as an uninterrupted one, because the
+checkpoint already stores the step number. The schedule parameters will be
+part of the settings checked at resume, so that a run cannot continue with a
+different curve by mistake.
