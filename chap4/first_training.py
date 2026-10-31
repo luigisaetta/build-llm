@@ -110,7 +110,15 @@ BATCH_SIZE = 4
 NUM_EPOCHS = 6
 LEARNING_RATE = 0.0004
 WEIGHT_DECAY = 0.1
-EVAL_FREQ = 10  # Evaluate every EVAL_FREQ optimizer steps
+# Gradient clipping: before each optimizer step, if the norm of all the
+# gradients together is larger than GRAD_CLIP_NORM, the gradients are scaled
+# down to that norm. Their direction does not change, only the size of the
+# step. With batches of 4 sequences the gradients are noisy, and a rare batch
+# can produce a very large gradient that undoes many steps of progress; the
+# clipping limits the damage. 1.0 is the usual value for GPT models. Set it to
+# None to disable it, as in the book and in the runs saved before this option.
+GRAD_CLIP_NORM: float | None = 1.0
+EVAL_FREQ = 50  # Evaluate every EVAL_FREQ optimizer steps
 EVAL_ITER = 5  # Training batches used for each evaluation
 # The validation loss of each evaluation uses a fixed sample of validation
 # sequences, chosen once at regular intervals inside every book: 100 sequences
@@ -334,6 +342,7 @@ def train_model_simple(  # pylint: disable=too-many-arguments,too-many-locals
     num_epochs: int,
     eval_freq: int,
     eval_iter: int,
+    grad_clip_norm: float | None = None,
     start_epoch: int = 0,
     state: TrainingState | None = None,
     on_epoch_end: Callable[[int, TrainingState], None] | None = None,
@@ -355,6 +364,8 @@ def train_model_simple(  # pylint: disable=too-many-arguments,too-many-locals
         num_epochs: Number of passes over the training data.
         eval_freq: Number of optimizer steps between two evaluations.
         eval_iter: Number of batches used for each evaluation.
+        grad_clip_norm: Maximum norm of the gradients before each optimizer
+            step; None disables gradient clipping.
         start_epoch: Number of epochs already completed, when resuming from a
             checkpoint; training continues with the next one.
         state: The progress restored from a checkpoint; a new one if None.
@@ -381,6 +392,9 @@ def train_model_simple(  # pylint: disable=too-many-arguments,too-many-locals
 
             loss = calc_loss_batch(input_batch, target_batch, model, device)
             loss.backward()  # Compute the gradients of the loss
+            if grad_clip_norm is not None:
+                # Scale all the gradients together if their norm is too large
+                torch.nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)
             optimizer.step()  # Update the weights using the gradients
 
             state.tokens_seen += input_batch.numel()
@@ -533,9 +547,14 @@ def training_settings(text_paths: list[Path]) -> dict:
 
     The model configuration must match the saved weights. The batch size, the
     split, and the books decide the batches of every epoch, and the learning
-    rate and weight decay are stored in the optimizer state: changing them in
-    the middle of a run would make it a different training. NUM_EPOCHS is not
-    included, so a finished run can be extended with more epochs.
+    rate and weight decay are stored in the optimizer state, and gradient
+    clipping changes every update: changing them in the middle of a run would
+    make it a different training. NUM_EPOCHS is not included, so a finished
+    run can be extended with more epochs.
+
+    A setting that is None now and absent from an older checkpoint counts as
+    equal, so runs saved before an option existed can still be resumed with
+    the option disabled.
 
     Args:
         text_paths: The book files used for training.
@@ -550,6 +569,7 @@ def training_settings(text_paths: list[Path]) -> dict:
         "train_ratio": TRAIN_RATIO,
         "learning_rate": LEARNING_RATE,
         "weight_decay": WEIGHT_DECAY,
+        "grad_clip_norm": GRAD_CLIP_NORM,
         # File names and sizes: a cheap fingerprint of the corpus
         "books": [f"{path.name}:{path.stat().st_size}" for path in text_paths],
     }
@@ -688,6 +708,10 @@ def show_summary(
             ("Context", f"{GPT_CONFIG_SMALL_256['context_length']} tokens"),
             ("Learning rate", f"{LEARNING_RATE:g}"),
             (
+                "Gradient clipping",
+                "off" if GRAD_CLIP_NORM is None else f"max norm {GRAD_CLIP_NORM:g}",
+            ),
+            (
                 "Split per book",
                 f"{TRAIN_RATIO:.0%} training / {1 - TRAIN_RATIO:.0%} validation",
             ),
@@ -776,6 +800,7 @@ def main(argv: list[str] | None = None) -> int:  # pylint: disable=too-many-loca
             num_epochs=NUM_EPOCHS,
             eval_freq=EVAL_FREQ,
             eval_iter=EVAL_ITER,
+            grad_clip_norm=GRAD_CLIP_NORM,
             start_epoch=start_epoch,
             state=state,
             on_epoch_end=make_checkpoint_saver(

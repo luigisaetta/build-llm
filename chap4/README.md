@@ -199,8 +199,10 @@ Things to know:
   each save; set `KEEP_CHECKPOINTS = None` to keep them all.
 * **Same settings.** A resume is refused, with the list of differences, if
   the model configuration, weight tying, batch size, split, learning rate,
-  weight decay, or the books (names and sizes) changed. Changing them would
-  make it a different training.
+  weight decay, gradient clipping, or the books (names and sizes) changed.
+  Changing them would make it a different training. A setting added later,
+  such as gradient clipping, matches older checkpoints only when it is
+  disabled (`None`).
 * **No overwriting.** A new run, without `--resume`, refuses to start if the
   checkpoint folder already holds checkpoints. To start a separate run,
   choose another folder with `--checkpoint-dir`, for example
@@ -212,8 +214,38 @@ Things to know:
 
 The code is in [`build_llm/checkpoints.py`](../build_llm/checkpoints.py).
 
+### Gradient clipping and learning rate schedules
+
+**Gradient clipping** is enabled (`GRAD_CLIP_NORM = 1.0`). Before each
+optimizer step, if the norm of all the gradients together is larger than 1.0,
+the gradients are scaled down to that norm: their direction does not change,
+only the size of the step. With batches of 4 sequences the gradients are
+noisy, and a rare batch can produce a very large gradient that undoes many
+steps of progress. Set `GRAD_CLIP_NORM = None` to train as in the book; that
+is also needed to resume a checkpoint saved before this option existed.
+
+**Learning rate schedules** are available in
+[`build_llm/lr_schedule.py`](../build_llm/lr_schedule.py), but the script does
+not use them yet: it still trains with a constant learning rate of 4e-4.
+`learning_rate(step, ...)` supports two schedules, both with a linear warmup:
+
+| Schedule | After the warmup | Total steps |
+| --- | --- | --- |
+| `"cosine"` | decreases along half a cosine wave, down to the minimum at the last step | fixed from the start: it sets the shape of the whole curve |
+| `"wsd"` (warmup, stable, decay) | stays at the peak, then decreases linearly to the minimum in the last `decay_fraction` of the steps | can still change until the decay starts, so a run can be extended |
+
+The learning rate is a pure function of the optimizer step, with no internal
+state: a resumed training gets exactly the same learning rates as an
+uninterrupted one from the step number saved in the checkpoint.
+
 ## Changelog
 
+* **2026-10-31: gradient clipping and learning rate schedules.** Training
+  clips the gradient norm to 1.0 before every optimizer step
+  (`GRAD_CLIP_NORM`), and the setting is checked when a run resumes.
+  `build_llm/lr_schedule.py` adds the cosine and WSD schedules, not yet used
+  by the script. The run saved before this change, with a constant learning
+  rate and no clipping, can be resumed only with `GRAD_CLIP_NORM = None`.
 * **2026-10-31: checkpoints and resume.** The script saves a checkpoint at
   the end of every epoch, keeps the 2 most recent ones, and resumes from one
   with `--resume`; see [Checkpoints and resume](#checkpoints-and-resume).

@@ -136,6 +136,13 @@ def test_check_settings_reports_missing_and_extra_keys():
     check_settings({"batch_size": 2}, {"batch_size": 2})  # No error
 
 
+def test_option_disabled_now_matches_an_older_checkpoint():
+    """A new setting set to None equals its absence in an older checkpoint."""
+    check_settings({"batch_size": 2}, {"batch_size": 2, "grad_clip_norm": None})
+    with pytest.raises(ValueError, match="grad_clip_norm"):
+        check_settings({"batch_size": 2}, {"batch_size": 2, "grad_clip_norm": 1.0})
+
+
 def test_unsupported_version_is_rejected(tmp_path):
     """A checkpoint with another format version is not loaded."""
     model, optimizer = trained_model_and_optimizer()
