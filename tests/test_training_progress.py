@@ -13,7 +13,8 @@ from torch.utils.data import DataLoader, TensorDataset
 
 from build_llm.gpt2 import GPTModel
 from build_llm.training_progress import TrainingProgress, loss_trend
-from chap4.first_training import TEXT_PATHS, train_model_simple
+from chap4.first_training import train_model_simple
+from chap4 import first_training
 
 
 @pytest.mark.parametrize("unicode", [True, False])
@@ -54,10 +55,36 @@ def test_color_can_be_disabled(monkeypatch):
     assert not TrainingProgress(stream).color
 
 
-def test_books_are_located_in_books_directory():
-    """Every training text remains accessible after moving the corpus."""
-    assert len(TEXT_PATHS) == 12
-    assert all(path.parent.name == "books" and path.is_file() for path in TEXT_PATHS)
+def test_find_books_dynamically(tmp_path, monkeypatch):
+    """Discovery sorts text files, ignores directories, and picks up new books."""
+    monkeypatch.setattr(first_training, "BOOKS_DIR", tmp_path)
+    for name in ("zebra.txt", "apple.txt", "README.md"):
+        (tmp_path / name).write_text("Example", encoding="utf-8")
+    (tmp_path / "nested.txt").mkdir()
+    (tmp_path / "nested.txt" / "hidden.txt").write_text("Nested", encoding="utf-8")
+    assert [path.name for path in first_training.find_book_paths()] == [
+        "apple.txt",
+        "zebra.txt",
+    ]
+    (tmp_path / "new.txt").write_text("New book", encoding="utf-8")
+    assert [path.name for path in first_training.find_book_paths()] == [
+        "apple.txt",
+        "new.txt",
+        "zebra.txt",
+    ]
+
+
+@pytest.mark.parametrize("missing_directory", [False, True])
+def test_missing_books_report_preparation_command(
+    tmp_path, monkeypatch, capsys, missing_directory
+):
+    """Missing or empty books directories fail before allocating a model."""
+    directory = tmp_path / "missing" if missing_directory else tmp_path
+    monkeypatch.setattr(first_training, "BOOKS_DIR", directory)
+    assert first_training.main() == 1
+    error = capsys.readouterr().err
+    assert "No .txt books found" in error
+    assert "python -m chap4.prepare_books" in error
 
 
 def test_tiny_training_reports_final_step(capsys):

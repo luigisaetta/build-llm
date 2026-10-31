@@ -34,25 +34,46 @@ The reusable code is in the `build_llm` package:
 ## A first training run
 
 [`first_training.py`](first_training.py) trains a GPT-2 Small-sized model
-from random weights on twelve public-domain books, about 1,050,000 tokens in
-all. The texts are in `chap4/books/`, converted to plain text from the
-[Standard Ebooks](https://standardebooks.org/) editions; their sources are in
-[NOTICE](../NOTICE).
+from random weights on **31 complete public-domain books, totaling
+10,056,985 GPT-2 tokens**. The original twelve books are joined by nineteen
+novels, including "War and Peace", "Les Misérables", "The Brothers Karamazov",
+and "The Count of Monte Cristo". The texts in `chap4/books/` are converted
+from the [Standard Ebooks](https://standardebooks.org/) XHTML sources.
+The [book catalogue](books/README.md) lists every book and its token count;
+[NOTICE](../NOTICE) and [the manifest](books_manifest.json) record provenance,
+licenses, modifications, and pinned source revisions.
 
-| File | Book | Tokens |
-| --- | --- | --- |
-| `the-time-machine.txt` | "The Time Machine", H. G. Wells, 1895 | 41,578 |
-| `ethan-frome.txt` | "Ethan Frome", Edith Wharton, 1911 | 48,728 |
-| `heart-of-darkness.txt` | "Heart of Darkness", Joseph Conrad, 1899 | 51,678 |
-| `the-war-of-the-worlds.txt` | "The War of the Worlds", H. G. Wells, 1898 | 78,344 |
-| `dr-jekyll-and-mr-hyde.txt` | "The Strange Case of Dr. Jekyll and Mr. Hyde", Robert Louis Stevenson, 1886 | 34,798 |
-| `a-christmas-carol.txt` | "A Christmas Carol", Charles Dickens, 1843 | 42,162 |
-| `pride-and-prejudice.txt` | "Pride and Prejudice", Jane Austen, 1813 | 161,830 |
-| `frankenstein.txt` | "Frankenstein", Mary Shelley, 1818 | 95,169 |
-| `dracula.txt` | "Dracula", Bram Stoker, 1897 | 209,600 |
-| `the-picture-of-dorian-gray.txt` | "The Picture of Dorian Gray", Oscar Wilde, 1890 | 109,030 |
-| `the-hound-of-the-baskervilles.txt` | "The Hound of the Baskervilles", Arthur Conan Doyle, 1902 | 80,861 |
-| `treasure-island.txt` | "Treasure Island", Robert Louis Stevenson, 1883 | 97,767 |
+At startup, training discovers all `.txt` files directly inside `chap4/books/`
+and sorts them alphabetically. Adding or removing a local book automatically
+changes the training corpus; no filename list or manifest is read by the
+training script. Other files and nested directories are ignored. An empty or
+missing `books/` directory produces an error before the model is allocated.
+
+Prepare the nineteen added books before the first training run:
+
+```bash
+python -m chap4.prepare_books
+```
+
+Preparation downloads pinned official source archives, keeps only bodymatter
+in EPUB reading order, preserves chapter headings and paragraphs, and removes
+notes, note references, editorial front/back matter, and Gutenberg boilerplate.
+The converter normalizes invisible formatting characters and typographic
+spaces. The converted files are checked against SHA-256 checksums; existing
+modified files are preserved with an error. The original twelve texts remain
+unchanged. Added text files are ignored by Git and restored with the command
+above. Preparation requires network access only when files are missing (or
+when tiktoken's encoding is not cached).
+
+To extend the manifest later with another official Standard Ebooks repository:
+
+```bash
+python -m chap4.prepare_books --target-tokens 11000000 --add charles-dickens_a-tale-of-two-cities
+```
+
+This records the revision, conversion checksum, and token count for the new
+edition. Also update NOTICE and the book catalogue when adding third-party
+material. Whole books are retained, so a target may be exceeded slightly.
 
 **The split is made per book**: the first 90% of each book goes to training
 and the last 10% to validation, with `split_documents` of
@@ -103,21 +124,22 @@ root:
 python -m chap4.first_training
 ```
 
-It downloads nothing and saves nothing. The training set has about 946,500
-tokens (924 batches of 4 sequences per epoch), the validation set about
-105,000 tokens (103 batches). An epoch has about 3.5 times the batches of the
-six-book run, so it takes about 3.5 times longer. Expected result: the
-training loss falls steadily. The validation loss should keep improving for
-longer than with fewer books, but about one million tokens is still little
-for a model of this size: after enough epochs it reaches a minimum and rises
-again, as the model starts to memorize the text instead of learning to
-generalize.
+Training downloads nothing and saves nothing. With the current configuration
+(context 256, batch size 4), the per-book 90/10 split produces
+**9,058,141 training tokens (8,845 batches per epoch)** and
+**998,936 validation tokens (976 batches)**, including document
+separators. Split token counts can differ slightly from the sum of complete
+books because BPE is applied separately after cutting each text by character.
+An epoch has about 9.6 times as many training batches as the twelve-book run;
+no wall-clock duration has been measured yet. Expected result: the training
+loss falls, while validation loss helps reveal overfitting. Ten million tokens
+is still a small corpus for a model of about 124M parameters.
 
 With "The Time Machine" alone (10 epochs, batches of 2 sequences), the run
 took about 5 minutes on a MacBook with Apple Silicon (MPS): the training loss
 fell from about 9.8 to below 0.2, and the validation loss reached its
 minimum, about 5.7, around epoch 4, before rising to about 7.2. The run with
-the twelve books has not been recorded yet.
+the 31-book corpus has not been recorded yet.
 
 The data loader is in [`build_llm/dataloaders.py`](../build_llm/dataloaders.py).
 

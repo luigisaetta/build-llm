@@ -3,7 +3,7 @@ Author: L. Saetta
 Date Last Modified: 2026-10-31
 License: Apache-2.0
 Description: A first training loop: pre-train a GPT-2 Small-sized model, from
-    random weights, on twelve public-domain books (see TEXT_PATHS and NOTICE).
+    random weights, on public-domain books in books/ (see NOTICE).
 
 Origin: derived from the code of Chapter 5 of LLMs-from-scratch
 (https://github.com/rasbt/LLMs-from-scratch), Copyright 2023-2026 Sebastian
@@ -22,7 +22,7 @@ as in the original GPT-2 and unlike the book. The model has about 124M
 parameters instead of about 163M, with the same architecture; see
 TIE_EMBEDDINGS below.
 
-The dataset (about 1,050,000 tokens) is still small for a model of about 124M
+The dataset (over 10 million GPT-2 tokens) is still small for a model of about 124M
 parameters, so after some epochs the model tends to memorize the text: the
 training loss keeps going down, while the validation loss stops improving.
 That is expected here.
@@ -67,24 +67,8 @@ GPT_CONFIG_SMALL_256 = {
 # Set it to False to train the model of the book, with a separate output head.
 TIE_EMBEDDINGS = True
 
-# Twelve public-domain books, about 1,050,000 tokens in all; see NOTICE. They
-# are located from this file, so that the script works from any working
-# directory. Each one is split on its own into training and validation text.
+# Load the local .txt books dynamically; split each one independently for validation.
 BOOKS_DIR = Path(__file__).resolve().parent / "books"
-TEXT_PATHS = [
-    BOOKS_DIR / "the-time-machine.txt",  # H. G. Wells, 1895
-    BOOKS_DIR / "ethan-frome.txt",  # Edith Wharton, 1911
-    BOOKS_DIR / "heart-of-darkness.txt",  # Joseph Conrad, 1899
-    BOOKS_DIR / "the-war-of-the-worlds.txt",  # H. G. Wells, 1898
-    BOOKS_DIR / "dr-jekyll-and-mr-hyde.txt",  # Robert Louis Stevenson, 1886
-    BOOKS_DIR / "a-christmas-carol.txt",  # Charles Dickens, 1843
-    BOOKS_DIR / "pride-and-prejudice.txt",  # Jane Austen, 1813
-    BOOKS_DIR / "frankenstein.txt",  # Mary Shelley, 1818
-    BOOKS_DIR / "dracula.txt",  # Bram Stoker, 1897
-    BOOKS_DIR / "the-picture-of-dorian-gray.txt",  # Oscar Wilde, 1890
-    BOOKS_DIR / "the-hound-of-the-baskervilles.txt",  # Arthur Conan Doyle, 1902
-    BOOKS_DIR / "treasure-island.txt",  # Robert Louis Stevenson, 1883
-]
 
 TRAIN_RATIO = 0.90  # Fraction of each book used for training; the rest validates
 # doubled
@@ -102,6 +86,16 @@ NEW_TOKENS = 50  # Tokens generated after the prompt
 #
 # Functions
 #
+def find_book_paths() -> list[Path]:
+    """Find local training books at runtime in a deterministic order.
+
+    Returns:
+        Regular .txt files directly inside BOOKS_DIR, sorted by filename.
+        An empty list if the directory is missing or contains no text files.
+    """
+    return sorted(path for path in BOOKS_DIR.glob("*.txt") if path.is_file())
+
+
 def calc_loss_batch(
     input_batch: torch.Tensor,
     target_batch: torch.Tensor,
@@ -353,6 +347,14 @@ def main() -> int:
     Returns:
         The exit code: 0 on success.
     """
+    text_paths = find_book_paths()
+    if not text_paths:
+        print(
+            f"No .txt books found in {BOOKS_DIR}. "
+            "Run python -m chap4.prepare_books before training.",
+            file=sys.stderr,
+        )
+        return 1
     torch.manual_seed(123)  # Same initial weights and batch order at every run
     device = get_device()
 
@@ -383,11 +385,11 @@ def main() -> int:
     )
     tokenizer = tiktoken.get_encoding("gpt2")
 
-    books = [path.read_text(encoding="utf-8") for path in TEXT_PATHS]
+    books = [path.read_text(encoding="utf-8") for path in text_paths]
     progress.show_books(
         [
             (path.name, len(book), len(tokenizer.encode(book)))
-            for path, book in zip(TEXT_PATHS, books)
+            for path, book in zip(text_paths, books)
         ]
     )
 

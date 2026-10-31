@@ -226,3 +226,6 @@ __marimo__/
 
 # Downloaded model weights (see build_llm/gpt2_weights.py)
 /models/
+
+# Expanded Chapter 4 corpus: reproduce with python -m chap4.prepare_books.
+/chap4/books/*.txt

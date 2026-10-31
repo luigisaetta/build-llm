@@ -258,6 +258,141 @@ Changes:   converted from XHTML to plain text: one paragraph per block,
            spaces removed.
 
 
+3a. Expanded Chapter 4 training corpus
+--------------------------------------
+
+The following nineteen files are modified plain-text conversions of the
+Standard Ebooks editions listed below. Original literary texts are in the
+public domain. Standard Ebooks contributors dedicate their contributions
+to the public domain under CC0 1.0 (copy: LICENSES/CC0-1.0.txt).
+
+Changes: bodymatter XHTML converted to plain text in EPUB spine order;
+chapter headings and paragraphs retained; front/back matter, notes, note
+references, and Gutenberg boilerplate excluded; invisible formatting
+characters removed and typographic spaces normalized. Title and author
+retained. Exact chapter paths, converted SHA-256 checksums, token counts,
+and edition URLs are recorded in chap4/books_manifest.json. Downloaded
+texts are not committed to Git; restore with python -m chap4.prepare_books.
+
+File:      chap4/books/war-and-peace.txt
+Content:   "War and Peace", by Leo Tolstoy.
+Translated by Louise and Aylmer Maude.
+Source:    https://standardebooks.org/ebooks/leo-tolstoy/war-and-peace/louise-maude_aylmer-maude
+Repository: https://github.com/standardebooks/leo-tolstoy_war-and-peace_louise-maude_aylmer-maude
+Revision:  27d8ca3670beba08f498cd87387b1db5c4c2e7ea
+
+File:      chap4/books/les-miserables.txt
+Content:   "Les Misérables", by Victor Hugo.
+Translated by Isabel F. Hapgood.
+Source:    https://standardebooks.org/ebooks/victor-hugo/les-miserables/isabel-f-hapgood
+Repository: https://github.com/standardebooks/victor-hugo_les-miserables_isabel-f-hapgood
+Revision:  c7f2bff2c65d71dad16722d7ca924d6988bb1883
+
+File:      chap4/books/bleak-house.txt
+Content:   "Bleak House", by Charles Dickens.
+Source:    https://standardebooks.org/ebooks/charles-dickens/bleak-house
+Repository: https://github.com/standardebooks/charles-dickens_bleak-house
+Revision:  37d865ef07d0108718597e10302c27818d7d6952
+
+File:      chap4/books/david-copperfield.txt
+Content:   "David Copperfield", by Charles Dickens.
+Source:    https://standardebooks.org/ebooks/charles-dickens/david-copperfield
+Repository: https://github.com/standardebooks/charles-dickens_david-copperfield
+Revision:  8bba74b3b9b5bd85cb96f997660bbbe32df6dc7b
+
+File:      chap4/books/dombey-and-son.txt
+Content:   "Dombey and Son", by Charles Dickens.
+Source:    https://standardebooks.org/ebooks/charles-dickens/dombey-and-son
+Repository: https://github.com/standardebooks/charles-dickens_dombey-and-son
+Revision:  0c29f026be04a8726a767ebce4aeb7bdfd37d6c8
+
+File:      chap4/books/little-dorrit.txt
+Content:   "Little Dorrit", by Charles Dickens.
+Source:    https://standardebooks.org/ebooks/charles-dickens/little-dorrit
+Repository: https://github.com/standardebooks/charles-dickens_little-dorrit
+Revision:  2e17e3af58e7d826ee390beb1fb13878476c1635
+
+File:      chap4/books/our-mutual-friend.txt
+Content:   "Our Mutual Friend", by Charles Dickens.
+Source:    https://standardebooks.org/ebooks/charles-dickens/our-mutual-friend
+Repository: https://github.com/standardebooks/charles-dickens_our-mutual-friend
+Revision:  424f88d96596f6f85f7781f3c49a077a92f75199
+
+File:      chap4/books/nicholas-nickleby.txt
+Content:   "Nicholas Nickleby", by Charles Dickens.
+Source:    https://standardebooks.org/ebooks/charles-dickens/nicholas-nickleby
+Repository: https://github.com/standardebooks/charles-dickens_nicholas-nickleby
+Revision:  3bf08586ba40c72f2b3f667634a50d64293a67d2
+
+File:      chap4/books/martin-chuzzlewit.txt
+Content:   "Martin Chuzzlewit", by Charles Dickens.
+Source:    https://standardebooks.org/ebooks/charles-dickens/martin-chuzzlewit
+Repository: https://github.com/standardebooks/charles-dickens_martin-chuzzlewit
+Revision:  37b2e82157ceab97d111f6fdc8692cfc73956cd5
+
+File:      chap4/books/the-pickwick-papers.txt
+Content:   "The Pickwick Papers", by Charles Dickens.
+Source:    https://standardebooks.org/ebooks/charles-dickens/the-pickwick-papers
+Repository: https://github.com/standardebooks/charles-dickens_the-pickwick-papers
+Revision:  9b8207c697ade2039a79248e418cc76833e17f68
+
+File:      chap4/books/middlemarch.txt
+Content:   "Middlemarch", by George Eliot.
+Source:    https://standardebooks.org/ebooks/george-eliot/middlemarch
+Repository: https://github.com/standardebooks/george-eliot_middlemarch
+Revision:  3d2df9a004d7981a89f1d65ac6ddb306bf3d3865
+
+File:      chap4/books/vanity-fair.txt
+Content:   "Vanity Fair", by William Makepeace Thackeray.
+Source:    https://standardebooks.org/ebooks/william-makepeace-thackeray/vanity-fair
+Repository: https://github.com/standardebooks/william-makepeace-thackeray_vanity-fair
+Revision:  a2436d82cf9315001843fb8f3254ac047ab49c57
+
+File:      chap4/books/moby-dick.txt
+Content:   "Moby Dick", by Herman Melville.
+Source:    https://standardebooks.org/ebooks/herman-melville/moby-dick
+Repository: https://github.com/standardebooks/herman-melville_moby-dick
+Revision:  272dcd5dca78cd917ec5ac22b03f97d084e3d45a
+
+File:      chap4/books/jane-eyre.txt
+Content:   "Jane Eyre", by Charlotte Brontë.
+Source:    https://standardebooks.org/ebooks/charlotte-bronte/jane-eyre
+Repository: https://github.com/standardebooks/charlotte-bronte_jane-eyre
+Revision:  f0c0fafee433803f9858180c8e6b536869143531
+
+File:      chap4/books/the-brothers-karamazov.txt
+Content:   "The Brothers Karamazov", by Fyodor Dostoevsky.
+Translated by Constance Garnett.
+Source:    https://standardebooks.org/ebooks/fyodor-dostoevsky/the-brothers-karamazov/constance-garnett
+Repository: https://github.com/standardebooks/fyodor-dostoevsky_the-brothers-karamazov_constance-garnett
+Revision:  c16757c9985bddf440f605b14a3f2bc411526dbb
+
+File:      chap4/books/the-count-of-monte-cristo.txt
+Content:   "The Count of Monte Cristo", by Alexandre Dumas.
+Translated by Chapman and Hall.
+Source:    https://standardebooks.org/ebooks/alexandre-dumas/the-count-of-monte-cristo/chapman-and-hall
+Repository: https://github.com/standardebooks/alexandre-dumas_the-count-of-monte-cristo_chapman-and-hall
+Revision:  88a09dcba85001be05c8d6d6e981e9804a52424f
+
+File:      chap4/books/the-portrait-of-a-lady.txt
+Content:   "The Portrait of a Lady", by Henry James.
+Source:    https://standardebooks.org/ebooks/henry-james/the-portrait-of-a-lady
+Repository: https://github.com/standardebooks/henry-james_the-portrait-of-a-lady
+Revision:  66af2f3f065cf8d6bd88e284daaaec8fc347f948
+
+File:      chap4/books/great-expectations.txt
+Content:   "Great Expectations", by Charles Dickens.
+Source:    https://standardebooks.org/ebooks/charles-dickens/great-expectations
+Repository: https://github.com/standardebooks/charles-dickens_great-expectations
+Revision:  587bc920acaa9a86207e66e04ed0599a87e3633c
+
+File:      chap4/books/oliver-twist.txt
+Content:   "Oliver Twist", by Charles Dickens.
+Source:    https://standardebooks.org/ebooks/charles-dickens/oliver-twist
+Repository: https://github.com/standardebooks/charles-dickens_oliver-twist
+Revision:  819af2b75e43aef0c5db08f131304a1b9bf4e298
+
+
 4. Original code of this repository
 -----------------------------------
 

@@ -98,7 +98,7 @@ The chapter numbers of this repository differ from the book.
 | [Chap 1](chap1/README.md) | Text data and tokenization | The Tokenizer explorer (web UI and CLI), and a notebook on the data loader for next-token prediction | 2 |
 | [Chap 2](chap2/README.md) | Self-attention | Four notebooks: simplified attention, scaled attention with trainable query, key, and value projections, causal attention with dropout, and multi-head attention | 3 |
 | [Chap 3](chap3/README.md) | GPT architecture | Two notebooks: a dummy GPT model, from token IDs to logits, and the complete GPT-2-like model built step by step, with its architecture diagram and parameter count | 4 |
-| [Chap 4](chap4/README.md) | Pretrained weights and first training | A notebook that loads the GPT-2 Small weights from Hugging Face, without TensorFlow, and generates text; a script that trains the model from random weights on twelve public-domain books, about 1 million tokens, tracking the training and validation losses | 5 |
+| [Chap 4](chap4/README.md) | Pretrained weights and first training | A notebook that loads the GPT-2 Small weights from Hugging Face, without TensorFlow, and generates text; a script that trains the model from random weights on 31 public-domain books, over 10 million tokens, tracking the training and validation losses | 5 |
 
 ## Getting started
 
@@ -128,7 +128,7 @@ start from [Chapter 1](chap1/README.md).
 - 🚧 **Text generation**: greedy decoding ([Chapter 4](chap4/README.md));
   next, temperature and top-k sampling.
 - 🚧 **Pre-training**: cross-entropy loss and a training loop with AdamW, on
-  twelve public-domain books (about 1 million tokens), with a training and
+  31 public-domain books (over 10 million tokens), with a training and
   validation split per book
   ([`chap4/first_training.py`](chap4/first_training.py)); next, saving and
   loading checkpoints.
@@ -188,7 +188,7 @@ which made this project possible.
   modified for this repository, and each one states its origin.
 * `chap1/the-verdict.txt` is the short story "The Verdict" by Edith Wharton
   (1908), in the public domain, taken from the same repository.
-* The twelve books in `chap4/books/` used for training, such as "The Time Machine"
+* The 31 books in `chap4/books/` used for training, such as "The Time Machine"
   by H. G. Wells and "Pride and Prejudice" by Jane Austen, are in the public
   domain. They were converted to plain text from the
   [Standard Ebooks](https://standardebooks.org/) editions, whose
