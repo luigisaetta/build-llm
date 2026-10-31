@@ -1,6 +1,6 @@
 """
 Author: L. Saetta
-Date Last Modified: 2026-10-30
+Date Last Modified: 2026-10-31
 License: Apache-2.0
 Description: Reusable building blocks of a GPT-2-like model: multi-head causal
     attention, layer normalization, GELU, feed-forward network, transformer
@@ -11,6 +11,13 @@ Origin: derived from the code of Chapters 3 and 4 of LLMs-from-scratch
 Raschka, licensed under the Apache License 2.0 (see
 LICENSES/Apache-2.0-LLMs-from-scratch.txt). Modified by L. Saetta (2026):
 docstrings, type hints, and input validation added, comments corrected.
+
+Addition not in the book: the tie_embeddings argument of GPTModel (default
+False). When True, the output head reuses the token embedding matrix, as in
+the original GPT-2, which removes vocab_size * emb_dim parameters. It is a
+constructor argument, not a field of the configuration dictionary, so the
+configurations of the book keep their meaning. With the default, GPTModel
+behaves exactly as in the book.
 
 All the modules work on tensors of shape (batch_size, num_tokens, emb_dim),
 except GPTModel, which maps token IDs to logits. The attribute names follow the
@@ -271,15 +278,19 @@ class GPTModel(nn.Module):
     """A GPT-2-like model, from token IDs to next-token logits.
 
     Token and position embeddings, dropout, a stack of n_layers transformer
-    blocks, a final layer normalization, and a linear output head. The output
-    head has its own weights (no weight tying) and no bias.
+    blocks, a final layer normalization, and a linear output head without
+    bias. By default the output head has its own weights, as in the book.
 
     Args:
         cfg: Model configuration with vocab_size, context_length, emb_dim,
             n_heads, n_layers, drop_rate, and qkv_bias.
+        tie_embeddings: Addition to the book. If True, the output head and the
+            token embeddings share one (vocab_size, emb_dim) weight tensor
+            (weight tying, as in GPT-2): the model has vocab_size * emb_dim
+            fewer parameters, and training updates both layers together.
     """
 
-    def __init__(self, cfg: Mapping):
+    def __init__(self, cfg: Mapping, tie_embeddings: bool = False):
         super().__init__()
         self.tok_emb = nn.Embedding(cfg["vocab_size"], cfg["emb_dim"])
         self.pos_emb = nn.Embedding(cfg["context_length"], cfg["emb_dim"])
@@ -291,6 +302,13 @@ class GPTModel(nn.Module):
 
         self.final_norm = LayerNorm(cfg["emb_dim"])
         self.out_head = nn.Linear(cfg["emb_dim"], cfg["vocab_size"], bias=False)
+        if tie_embeddings:
+            # Both matrices have shape (vocab_size, emb_dim): nn.Embedding maps
+            # token IDs to rows, and nn.Linear stores (out_features,
+            # in_features) = (vocab_size, emb_dim). Assigning the Parameter
+            # makes the two layers share one tensor; the separate weight
+            # created by nn.Linear is discarded.
+            self.out_head.weight = self.tok_emb.weight
 
     def forward(self, in_idx: torch.Tensor) -> torch.Tensor:
         """Compute the logits.

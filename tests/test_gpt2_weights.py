@@ -1,6 +1,6 @@
 """
 Author: L. Saetta
-Date Last Modified: 2026-10-30
+Date Last Modified: 2026-10-31
 License: MIT
 Description: Tests for downloading and loading the GPT-2 weights of Hugging Face.
 """
@@ -101,6 +101,21 @@ def test_loaded_model_matches_reference_gpt2():
     with torch.no_grad():
         logits = model(token_ids)
 
+    expected = reference_gpt2_logits(hf_state_dict, TINY_CONFIG, token_ids)
+    assert torch.allclose(logits, expected, atol=1e-5)
+
+
+def test_tied_model_loads_the_same_weights():
+    """A model with tie_embeddings loads GPT-2 and computes the same logits."""
+    hf_state_dict = make_hf_state_dict(TINY_CONFIG)
+    model = GPTModel(TINY_CONFIG, tie_embeddings=True).eval()
+    load_hf_gpt2_weights(model, hf_state_dict)
+    token_ids = torch.tensor([[1, 5, 2, 9, 3]])
+
+    with torch.no_grad():
+        logits = model(token_ids)
+
+    assert model.out_head.weight is model.tok_emb.weight
     expected = reference_gpt2_logits(hf_state_dict, TINY_CONFIG, token_ids)
     assert torch.allclose(logits, expected, atol=1e-5)
 

@@ -1,6 +1,6 @@
 """
 Author: L. Saetta
-Date Last Modified: 2026-10-30
+Date Last Modified: 2026-10-31
 License: MIT
 Description: Tests for the GPT-2 building blocks in build_llm.gpt2.
 """
@@ -121,6 +121,39 @@ def test_gpt_model_parameter_count_matches_estimate():
     expected = estimate_gpt_parameters(TINY_CONFIG)["total"]
 
     assert count_parameters(model) == expected
+
+
+def test_gpt_model_has_separate_output_weights_by_default():
+    """Without tie_embeddings, the output head has its own matrix, as in the book."""
+    model = GPTModel(TINY_CONFIG)
+
+    assert model.out_head.weight is not model.tok_emb.weight
+
+
+def test_tied_model_shares_one_weight_tensor():
+    """With tie_embeddings, the output head and the embeddings share a Parameter."""
+    model = GPTModel(TINY_CONFIG, tie_embeddings=True)
+
+    assert model.out_head.weight is model.tok_emb.weight
+    expected = estimate_gpt_parameters({**TINY_CONFIG, "tie_embeddings": True})
+    assert count_parameters(model) == expected["total"]
+    untied = count_parameters(GPTModel(TINY_CONFIG))
+    assert untied - count_parameters(model) == 50 * 16  # vocab_size * emb_dim
+
+
+def test_tied_weights_stay_shared_after_a_training_step():
+    """One optimizer step updates the shared matrix, which stays shared."""
+    model = GPTModel(TINY_CONFIG, tie_embeddings=True)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=0.01)
+    before = model.tok_emb.weight.detach().clone()
+    token_ids = torch.randint(0, 50, (2, 6))
+
+    loss = F.cross_entropy(model(token_ids).flatten(0, 1), token_ids.flatten())
+    loss.backward()
+    optimizer.step()
+
+    assert model.out_head.weight is model.tok_emb.weight
+    assert not torch.equal(model.tok_emb.weight, before)
 
 
 def test_generate_text_simple_appends_greedy_tokens():
