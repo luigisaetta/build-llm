@@ -223,6 +223,40 @@ Things to know:
 
 The code is in [`build_llm/checkpoints.py`](../build_llm/checkpoints.py).
 
+### Test a checkpoint: complete a prompt
+
+[`generate_from_checkpoint.py`](generate_from_checkpoint.py) loads a saved
+checkpoint, by default the most recent one, and completes an English prompt
+with greedy decoding, up to a maximum number of new tokens:
+
+```bash
+python -m chap4.generate_from_checkpoint "It was a dark and stormy night"
+```
+
+```bash
+python -m chap4.generate_from_checkpoint "Mr. Darcy looked at Elizabeth" --max-new-tokens 100 --checkpoint models/checkpoints/first_training/epoch-001.pt
+```
+
+Options: `--max-new-tokens` (default 50), `--checkpoint` for a given file,
+`--checkpoint-dir` for the folder of another run, and `--device cpu` to leave
+the GPU to a running training. The script rebuilds the model from the
+configuration stored in the checkpoint and reads only its weights, so it works
+with checkpoints of older runs too. It prints the checkpoint, its epoch, its
+optimizer steps, and its last and best validation losses, then the prompt
+followed by the generated text. Generation also stops at the end-of-text token
+that separates the books.
+
+Comparing checkpoints shows the progress of the training. With the baseline
+run (constant learning rate, no clipping), the validation loss went from about
+4.36 after epoch 1 to about 3.98 after epoch 2. The greedy completions are
+grammatical but tend to repeat themselves, for example:
+
+```text
+Mr. Darcy looked at Elizabeth and said, “I am not a friend.”
+
+“I am not a friend,” said Elizabeth, “but I am not a friend.”
+```
+
 ### Gradient clipping and learning rate schedules
 
 **Gradient clipping** is enabled (`GRAD_CLIP_NORM = 1.0`). Before each
@@ -249,6 +283,12 @@ uninterrupted one from the step number saved in the checkpoint.
 
 ## Changelog
 
+* **2026-10-31: complete a prompt from a checkpoint.**
+  `generate_from_checkpoint.py` completes an English prompt with the most
+  recent checkpoint, or a given one; see
+  [Test a checkpoint](#test-a-checkpoint-complete-a-prompt).
+  `build_llm.checkpoints.read_checkpoint` reads a checkpoint without
+  restoring it, memory-mapped.
 * **2026-10-31: notebook on learning rate schedules.**
   `learning_rate_schedules.ipynb` explains and draws the cosine and WSD
   schedules. `matplotlib` is added to `requirements-dev.txt` for its charts.

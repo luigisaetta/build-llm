@@ -143,6 +143,32 @@ def save_checkpoint(  # pylint: disable=too-many-arguments
     os.replace(temporary, path)  # Atomic on the same file system
 
 
+def read_checkpoint(path: Path) -> dict[str, Any]:
+    """Read a checkpoint file, without restoring it into a model.
+
+    The file is memory-mapped: tensors are read from disk only when used, so
+    reading a 1.5 GB checkpoint to take only the model weights does not load
+    the optimizer state into memory.
+
+    Args:
+        path: The checkpoint file.
+
+    Returns:
+        The checkpoint, with "epoch", "model_state", "optimizer_state",
+        "rng_states", "training_state", and "settings".
+
+    Raises:
+        ValueError: If the checkpoint has an unsupported version.
+    """
+    checkpoint = torch.load(path, map_location="cpu", weights_only=True, mmap=True)
+    if checkpoint.get("version") != CHECKPOINT_VERSION:
+        raise ValueError(
+            f"Unsupported checkpoint version {checkpoint.get('version')} in "
+            f"{path}; expected {CHECKPOINT_VERSION}."
+        )
+    return checkpoint
+
+
 def load_checkpoint(
     path: Path,
     *,
@@ -175,12 +201,7 @@ def load_checkpoint(
             settings differ from expected_settings.
         RuntimeError: If the saved weights do not fit the model.
     """
-    checkpoint = torch.load(path, map_location="cpu", weights_only=True)
-    if checkpoint.get("version") != CHECKPOINT_VERSION:
-        raise ValueError(
-            f"Unsupported checkpoint version {checkpoint.get('version')} in "
-            f"{path}; expected {CHECKPOINT_VERSION}."
-        )
+    checkpoint = read_checkpoint(path)
     if expected_settings is not None:
         check_settings(checkpoint["settings"], expected_settings)
     model.load_state_dict(checkpoint["model_state"])
