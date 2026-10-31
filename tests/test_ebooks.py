@@ -126,6 +126,31 @@ def test_prepare_book_checks_hash_and_preserves_modified_files(tmp_path, monkeyp
     assert path.read_text(encoding="utf-8") == "User edits"
 
 
+def test_repository_books_are_verified_and_never_downloaded(tmp_path, monkeypatch):
+    """A book committed to the repository is checked, not restored from source."""
+
+    def no_download(_url):
+        raise AssertionError("A repository book must not be downloaded.")
+
+    monkeypatch.setattr(prepare_books, "BOOKS_DIR", tmp_path)
+    monkeypatch.setattr(prepare_books, "download", no_download)
+    path = tmp_path / "original.txt"
+    path.write_text("Committed text", encoding="utf-8")
+    entry = {
+        "filename": "original.txt",
+        "repository": "author_original",
+        "revision": "b" * 40,
+        "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+        "in_repository": True,
+    }
+
+    prepare_books.prepare_book(entry)  # Verified, no error
+
+    path.unlink()
+    with pytest.raises(ValueError, match="git checkout"):
+        prepare_books.prepare_book(entry)
+
+
 def test_prepare_book_rejects_changed_conversion(tmp_path, monkeypatch):
     """An unexpected source never becomes a training file."""
     monkeypatch.setattr(prepare_books, "BOOKS_DIR", tmp_path)

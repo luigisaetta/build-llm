@@ -55,36 +55,50 @@ def test_color_can_be_disabled(monkeypatch):
     assert not TrainingProgress(stream).color
 
 
-def test_find_books_dynamically(tmp_path, monkeypatch):
-    """Discovery sorts text files, ignores directories, and picks up new books."""
-    monkeypatch.setattr(first_training, "BOOKS_DIR", tmp_path)
+def test_book_paths_follow_the_manifest(tmp_path, monkeypatch, write_manifest):
+    """The books are the ones of the manifest, sorted by file name."""
+    books_dir = tmp_path / "books"
+    books_dir.mkdir()
     for name in ("zebra.txt", "apple.txt", "README.md"):
-        (tmp_path / name).write_text("Example", encoding="utf-8")
-    (tmp_path / "nested.txt").mkdir()
-    (tmp_path / "nested.txt" / "hidden.txt").write_text("Nested", encoding="utf-8")
-    assert [path.name for path in first_training.find_book_paths()] == [
-        "apple.txt",
-        "zebra.txt",
-    ]
-    (tmp_path / "new.txt").write_text("New book", encoding="utf-8")
-    assert [path.name for path in first_training.find_book_paths()] == [
-        "apple.txt",
-        "new.txt",
-        "zebra.txt",
-    ]
+        (books_dir / name).write_text("Example", encoding="utf-8")
+    (books_dir / "nested.txt").mkdir()  # A folder is not a book
+    write_manifest(tmp_path / "manifest.json", books_dir, ["zebra.txt", "apple.txt"])
+    monkeypatch.setattr(first_training, "BOOKS_DIR", books_dir)
+    monkeypatch.setattr(first_training, "MANIFEST_PATH", tmp_path / "manifest.json")
+
+    names = [path.name for path in first_training.find_book_paths()]
+
+    assert names == ["apple.txt", "zebra.txt"]
 
 
 @pytest.mark.parametrize("missing_directory", [False, True])
 def test_missing_books_report_preparation_command(
-    tmp_path, monkeypatch, capsys, missing_directory
+    tmp_path, monkeypatch, capsys, write_manifest, missing_directory
 ):
-    """Missing or empty books directories fail before allocating a model."""
+    """Missing books fail before allocating a model, with the command to run."""
+    (tmp_path / "book.txt").write_text("Example", encoding="utf-8")
+    write_manifest(tmp_path / "manifest.json", tmp_path, ["book.txt"])
+    (tmp_path / "book.txt").unlink()
     directory = tmp_path / "missing" if missing_directory else tmp_path
     monkeypatch.setattr(first_training, "BOOKS_DIR", directory)
+    monkeypatch.setattr(first_training, "MANIFEST_PATH", tmp_path / "manifest.json")
+
     assert first_training.main([]) == 1
     error = capsys.readouterr().err
-    assert "No .txt books found" in error
+    assert "missing: book.txt" in error
     assert "python -m chap4.prepare_books" in error
+
+
+def test_extra_books_are_refused(tmp_path, monkeypatch, capsys, write_manifest):
+    """A text file that is not in the manifest stops the training."""
+    (tmp_path / "book.txt").write_text("Example", encoding="utf-8")
+    write_manifest(tmp_path / "manifest.json", tmp_path, ["book.txt"])
+    (tmp_path / "extra.txt").write_text("Not chosen", encoding="utf-8")
+    monkeypatch.setattr(first_training, "BOOKS_DIR", tmp_path)
+    monkeypatch.setattr(first_training, "MANIFEST_PATH", tmp_path / "manifest.json")
+
+    assert first_training.main([]) == 1
+    assert "not in the manifest: extra.txt" in capsys.readouterr().err
 
 
 def test_tiny_training_reports_final_step(capsys):

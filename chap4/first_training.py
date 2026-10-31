@@ -45,6 +45,7 @@ import tiktoken
 import torch
 from torch.utils.data import DataLoader
 
+from build_llm.book_corpus import CorpusError, check_corpus, read_manifest
 from build_llm.checkpoints import (
     checkpoint_path,
     latest_checkpoint,
@@ -92,6 +93,9 @@ TIE_EMBEDDINGS = True
 
 # Load the local .txt books dynamically; split each one independently for validation.
 BOOKS_DIR = Path(__file__).resolve().parent / "books"
+# The list of the training books, with their sources and checksums: the
+# single definition of the corpus. See chap4/books/README.md.
+MANIFEST_PATH = Path(__file__).resolve().parent / "books_manifest.json"
 
 # Checkpoints, one at the end of every epoch. They go under models/, which is
 # ignored by Git. With weight tying, a checkpoint holds the weights (about
@@ -154,13 +158,20 @@ class TrainingState:
 # Functions
 #
 def find_book_paths() -> list[Path]:
-    """Find local training books at runtime in a deterministic order.
+    """Return the training books listed in the manifest, after checking them.
+
+    The books are sorted by file name, so the training data and the batch
+    order are the same at every run.
 
     Returns:
-        Regular .txt files directly inside BOOKS_DIR, sorted by filename.
-        An empty list if the directory is missing or contains no text files.
+        The paths of the books in BOOKS_DIR.
+
+    Raises:
+        FileNotFoundError: If the manifest is missing.
+        CorpusError: If books are missing or modified, or BOOKS_DIR holds .txt
+            files that are not in the manifest.
     """
-    return sorted(path for path in BOOKS_DIR.glob("*.txt") if path.is_file())
+    return check_corpus(read_manifest(MANIFEST_PATH), BOOKS_DIR)
 
 
 def calc_loss_batch(
@@ -739,11 +750,11 @@ def main(argv: list[str] | None = None) -> int:  # pylint: disable=too-many-loca
         resume from are missing or do not match.
     """
     args = parse_args(argv)
-    text_paths = find_book_paths()
-    if not text_paths:
+    try:
+        text_paths = find_book_paths()
+    except (FileNotFoundError, CorpusError) as error:
         print(
-            f"No .txt books found in {BOOKS_DIR}. "
-            "Run python -m chap4.prepare_books before training.",
+            f"{error}\nRun python -m chap4.prepare_books before training.",
             file=sys.stderr,
         )
         return 1

@@ -2,7 +2,25 @@
 Author: L. Saetta
 Date Last Modified: 2026-10-31
 License: MIT
-Description: Download and verify the expanded Standard Ebooks training corpus.
+Description: Download and verify the Standard Ebooks training corpus defined by
+    chap4/books_manifest.json.
+
+The manifest lists all the training books and is the single definition of the
+corpus. Each entry pins a Standard Ebooks repository at an exact revision and
+records the SHA-256 checksum of the converted text. Entries marked
+"in_repository" are text files committed to this repository: they are only
+verified, never downloaded. The other entries are downloaded data, ignored by
+Git, and restored by converting their pinned source again.
+
+Restore and verify the whole corpus, from the repository root:
+
+    python -m chap4.prepare_books
+
+Add new books, with the latest revision of each repository, until a target
+number of tokens; the new entries are appended to the manifest. Use the names
+of the official repositories, such as h-g-wells_the-time-machine:
+
+    python -m chap4.prepare_books --add AUTHOR_TITLE [AUTHOR_TITLE ...]
 """
 
 import argparse
@@ -15,6 +33,7 @@ from pathlib import Path
 
 import tiktoken
 
+from build_llm.book_corpus import CorpusError, check_corpus, read_manifest
 from build_llm.ebooks import convert_standard_ebook
 
 CHAPTER_DIR = Path(__file__).resolve().parent
@@ -48,10 +67,23 @@ def prepare_book(entry: dict) -> None:
         entry: Manifest record with filename, repository, revision, and checksum.
 
     Raises:
-        ValueError: If the downloaded conversion differs from the recorded text.
+        ValueError: If the downloaded conversion differs from the recorded text,
+            or a book committed to the repository is missing.
         OSError: If a source cannot be downloaded or a file cannot be written.
     """
     path = BOOKS_DIR / entry["filename"]
+    if entry.get("in_repository") and not path.is_file():
+        # Converted with an earlier converter: only Git has the exact text
+        repository_root = CHAPTER_DIR.parent
+        shown = (
+            path.relative_to(repository_root)
+            if path.is_relative_to(repository_root)
+            else path
+        )
+        raise ValueError(
+            f"{path.name} is part of the repository and is missing. "
+            f"Restore it with: git checkout -- {shown}"
+        )
     if path.is_file():
         if hashlib.sha256(path.read_bytes()).hexdigest() != entry["sha256"]:
             raise ValueError(
@@ -150,18 +182,11 @@ def main() -> int:
     )
     args = parser.parse_args()
     BOOKS_DIR.mkdir(exist_ok=True)
-    entries = (
-        json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
-        if MANIFEST_PATH.exists()
-        else []
-    )
+    entries = read_manifest(MANIFEST_PATH) if MANIFEST_PATH.exists() else []
     for entry in entries:
         prepare_book(entry)
     tokenizer = tiktoken.get_encoding("gpt2")
-    total = sum(
-        len(tokenizer.encode(path.read_text(encoding="utf-8")))
-        for path in BOOKS_DIR.glob("*.txt")
-    )
+    total = sum(entry["tokens"] for entry in entries)
     known = {entry["repository"] for entry in entries}
     for repository in args.add:
         if total >= args.target_tokens:
@@ -176,8 +201,12 @@ def main() -> int:
         )
         total += entry["tokens"]
         print(f"Corpus: {total:,} GPT-2 tokens", flush=True)
-    num_books = len(list(BOOKS_DIR.glob("*.txt")))
-    print(f"Ready: {total:,} GPT-2 tokens across {num_books} books.")
+    try:
+        paths = check_corpus(entries, BOOKS_DIR)
+    except CorpusError as error:
+        print(error, file=sys.stderr)
+        return 1
+    print(f"Ready: {total:,} GPT-2 tokens across {len(paths)} books.")
     return 0
 
 

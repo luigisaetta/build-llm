@@ -23,14 +23,16 @@ TINY_CONFIG = {
 
 
 @pytest.fixture(name="tiny_run")
-def fixture_tiny_run(tmp_path, monkeypatch, tiny_encoding):
+def fixture_tiny_run(tmp_path, monkeypatch, tiny_encoding, write_manifest):
     """Make first_training fast and offline: tiny model, books, and tokenizer."""
     books_dir = tmp_path / "books"
     books_dir.mkdir()
     for name, word in (("a.txt", "hello world. "), ("b.txt", "the sea is calm. ")):
         (books_dir / name).write_text(word * 60, encoding="utf-8")
 
+    write_manifest(tmp_path / "manifest.json", books_dir, ["a.txt", "b.txt"])
     monkeypatch.setattr(first_training, "BOOKS_DIR", books_dir)
+    monkeypatch.setattr(first_training, "MANIFEST_PATH", tmp_path / "manifest.json")
     monkeypatch.setattr(first_training, "GPT_CONFIG_SMALL_256", TINY_CONFIG)
     monkeypatch.setattr(first_training, "BATCH_SIZE", 2)
     monkeypatch.setattr(first_training, "EVAL_FREQ", 1000)

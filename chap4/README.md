@@ -283,6 +283,14 @@ uninterrupted one from the step number saved in the checkpoint.
 
 ## Changelog
 
+* **2026-10-31: the manifest defines the corpus.** `chap4/books_manifest.json`
+  lists all 31 books, including the 12 committed to the repository, with their
+  checksums. `prepare_books` verifies all of them, and `first_training.py`
+  reads the list from the manifest and stops if a book is missing or
+  modified, or if the folder holds a `.txt` file that is not listed; see
+  [the books README](books/README.md). The code is in
+  `build_llm/book_corpus.py`. Existing checkpoints can still be resumed: the
+  books and their order are unchanged.
 * **2026-10-31: complete a prompt from a checkpoint.**
   `generate_from_checkpoint.py` completes an English prompt with the most
   recent checkpoint, or a given one; see

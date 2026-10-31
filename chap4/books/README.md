@@ -16,19 +16,59 @@ formatting characters and typographic spaces are normalized. Title and author
 are retained. Source and license metadata stay in this README, the manifest,
 and NOTICE rather than being repeated inside the training text.
 
-The original twelve texts are retained unchanged. The nineteen added texts
-are downloaded data and are ignored by Git. Restore them from the repository
-root, in the `build-llm` environment:
+## The manifest: the list of the books
+
+The [manifest](../books_manifest.json) is the single definition of the
+corpus. It lists **all 31 books**, and for each one records the edition,
+author, translator where applicable, the Standard Ebooks repository and its
+immutable revision, the retained chapter files, the modifications, the token
+count, and the SHA-256 checksum of the converted text.
+
+* The first **twelve** books are committed to the repository
+  (`"in_repository": true`). They were converted with an earlier converter, so
+  only Git has their exact text: they are verified, never downloaded.
+* The other **nineteen** are downloaded data, ignored by Git, and restored by
+  converting their pinned source again with `build_llm/ebooks.py`.
+
+Restore and verify the whole corpus from the repository root, in the
+`build-llm` environment:
 
 ```bash
 python -m chap4.prepare_books
 ```
 
-The [manifest](../books_manifest.json) records each new file's edition,
-author, translator where applicable, immutable source revision, retained
-chapter paths, modifications, token count, and SHA-256 of the converted text.
-The command verifies existing files and refuses to overwrite modified texts.
-The original twelve editions and their conversion details are in
+The command downloads only the missing downloadable books, checks every
+checksum, refuses to overwrite a modified text, and reports any `.txt` file
+that is not in the manifest.
+
+`first_training.py` reads the list of books from the manifest, not from the
+folder. Before training it checks that every listed book is present and
+unmodified, and that the folder holds no other `.txt` file. If not, it stops
+with the list of problems, so the training data can never change silently.
+The books are always read in file-name order.
+
+To add books, run `python -m chap4.prepare_books --add AUTHOR_TITLE ...` with
+the names of official Standard Ebooks repositories: each new book is appended
+to the manifest, with the latest revision of its repository. Commit the
+manifest to make the new corpus reproducible.
+
+## How the books were chosen
+
+* **Public domain and English**: novels and novellas, or English translations,
+  whose authors and translators died more than 70 years ago, from the
+  carefully proofread editions of Standard Ebooks.
+* **Grown in steps**: about 5,000 tokens at first (one short story), then
+  about 300,000 (six short novels), 1 million (twelve classics of different
+  genres), and finally about 10 million, adding long nineteenth-century
+  novels.
+* **Variety of style**: gothic novels, adventure, detective fiction, social
+  novels, letters and diaries (*Dracula*, *Frankenstein*), and translations
+  from Russian and French.
+* **Known imbalance**: Charles Dickens wrote 11 of the 31 books, about 4.5
+  million tokens, almost half of the corpus, so the model learns his style
+  more than any other.
+
+The original twelve editions and their conversion details are also in
 [NOTICE](../../NOTICE).
 
 | File | Book / author | GPT-2 tokens |

@@ -1,9 +1,13 @@
 """
 Author: L. Saetta
-Date Last Modified: 2026-10-26
+Date Last Modified: 2026-10-31
 License: MIT
-Description: Shared pytest fixtures, including a tiny offline BPE encoding.
+Description: Shared pytest fixtures: a tiny offline BPE encoding, and a
+    writer of corpus manifests for test books.
 """
+
+import hashlib
+import json
 
 import pytest
 import tiktoken
@@ -30,3 +34,30 @@ def tiny_encoding() -> tiktoken.Encoding:
         mergeable_ranks=mergeable_ranks,
         special_tokens={"<|endoftext|>": END_OF_TEXT},
     )
+
+
+@pytest.fixture
+def write_manifest():
+    """Return a function that writes a manifest listing books of a folder.
+
+    The function takes the manifest path, the books folder, and the file names
+    to list; each entry gets the real SHA-256 checksum of its file.
+    """
+
+    def write(manifest_path, books_dir, names):
+        entries = [
+            {
+                "filename": name,
+                "title": name,
+                "author": "Test",
+                "repository": f"test_{name}",
+                "revision": "0" * 40,
+                "sha256": hashlib.sha256((books_dir / name).read_bytes()).hexdigest(),
+                "tokens": 1,
+            }
+            for name in names
+        ]
+        manifest_path.write_text(json.dumps(entries), encoding="utf-8")
+        return entries
+
+    return write
