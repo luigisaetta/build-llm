@@ -126,10 +126,11 @@ class TrainingProgress:
         """
         print(self._style(f"\nEpoch {epoch}/{num_epochs}", "1"), file=self.stream)
         print(
-            "  Progress                Step     Train       Val       Gap  Validation",
+            "  Progress                Step  Learn. rate     Train       Val       Gap"
+            "  Validation",
             file=self.stream,
         )
-        print("  " + "-" * 70, file=self.stream)
+        print("  " + "-" * 83, file=self.stream)
 
     def update(  # pylint: disable=too-many-arguments,too-many-positional-arguments
         self,
@@ -138,6 +139,7 @@ class TrainingProgress:
         step: int,
         train_loss: float,
         val_loss: float,
+        learning_rate: float | None = None,
     ) -> None:
         """Print an evaluation row with epoch progress and the generalization gap.
 
@@ -147,6 +149,7 @@ class TrainingProgress:
             step: One-based optimizer step across all epochs.
             train_loss: Evaluated training cross-entropy.
             val_loss: Evaluated validation cross-entropy.
+            learning_rate: Learning rate of the last optimizer step, if known.
         """
         fraction = completed / total
         filled = min(16, max(0, int(16 * fraction)))
@@ -159,8 +162,10 @@ class TrainingProgress:
             status = "non-finite loss"
         training = self._style(f"{train_loss:8.3f}", "36")
         validation = self._style(f"{val_loss:8.3f}", "32" if improved else "33")
+        rate = f"{learning_rate:11.2e}" if learning_rate is not None else " " * 11
         print(
-            f"  [{progress_bar}] {fraction:4.0%}  {step:7d}  {training}  {validation}"
+            f"  [{progress_bar}] {fraction:4.0%}  {step:7d}  {rate}  {training}"
+            f"  {validation}"
             f"  {val_loss - train_loss:+8.3f}  {status}",
             file=self.stream,
             flush=True,

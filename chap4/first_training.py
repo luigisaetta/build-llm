@@ -61,7 +61,9 @@ from build_llm.dataloaders import (
 )
 from build_llm.device import get_device
 from build_llm.gpt2 import GPTModel, generate_text_simple
+from build_llm.lr_schedule import learning_rate, set_learning_rate
 from build_llm.model_parameters import count_parameters
+from build_llm.training_log import MetricsLog
 from build_llm.training_progress import TrainingProgress
 from build_llm.validation_sample import create_validation_sample_loader
 
@@ -103,6 +105,9 @@ MANIFEST_PATH = Path(__file__).resolve().parent / "books_manifest.json"
 CHECKPOINT_DIR = (
     Path(__file__).resolve().parent.parent / "models" / "checkpoints" / "first_training"
 )
+# The losses of every evaluation are also written to a CSV file in the same
+# folder, to plot them later; see build_llm/training_log.py.
+METRICS_FILE = "metrics.csv"
 # The most recent checkpoints to keep; older ones are deleted after each save.
 # Set it to None to keep them all.
 KEEP_CHECKPOINTS: int | None = 2
@@ -112,7 +117,18 @@ TRAIN_RATIO = 0.90  # Fraction of each book used for training; the rest validate
 BATCH_SIZE = 4
 # reduced
 NUM_EPOCHS = 6
-LEARNING_RATE = 0.0004
+# Learning rate schedule (see build_llm/lr_schedule.py and
+# learning_rate_schedules.ipynb): a linear warmup over the first
+# WARMUP_FRACTION of the steps, up to LEARNING_RATE, then a cosine decay down
+# to MIN_LEARNING_RATE at the last step. The cosine spreads the decay over the
+# whole run, so it depends on the total number of steps: NUM_EPOCHS must be
+# the number of epochs that the run will really complete, and it cannot change
+# when a run resumes. Interrupting at the end of any epoch and resuming is
+# always exact. LR_SCHEDULE = "wsd" selects the other schedule.
+LR_SCHEDULE = "cosine"
+LEARNING_RATE = 0.0004  # Peak learning rate, reached at the end of the warmup
+MIN_LEARNING_RATE = 0.00004  # 10% of the peak, at the last step
+WARMUP_FRACTION = 0.02  # About 1,000 of the 53,070 steps of 6 epochs
 WEIGHT_DECAY = 0.1
 # Gradient clipping: before each optimizer step, if the norm of all the
 # gradients together is larger than GRAD_CLIP_NORM, the gradients are scaled
@@ -354,9 +370,11 @@ def train_model_simple(  # pylint: disable=too-many-arguments,too-many-locals
     eval_freq: int,
     eval_iter: int,
     grad_clip_norm: float | None = None,
+    lr_at_step: Callable[[int], float] | None = None,
     start_epoch: int = 0,
     state: TrainingState | None = None,
     on_epoch_end: Callable[[int, TrainingState], None] | None = None,
+    on_evaluation: Callable[[dict], None] | None = None,
 ) -> TrainingState:
     """Train the model, evaluating it periodically.
 
@@ -377,11 +395,17 @@ def train_model_simple(  # pylint: disable=too-many-arguments,too-many-locals
         eval_iter: Number of batches used for each evaluation.
         grad_clip_norm: Maximum norm of the gradients before each optimizer
             step; None disables gradient clipping.
+        lr_at_step: The learning rate schedule, a function of the zero-based
+            optimizer step; it sets the learning rate before every step. None
+            keeps the learning rate of the optimizer.
         start_epoch: Number of epochs already completed, when resuming from a
             checkpoint; training continues with the next one.
         state: The progress restored from a checkpoint; a new one if None.
         on_epoch_end: Called after each completed epoch with its one-based
             number and the current state, for example to save a checkpoint.
+        on_evaluation: Called after each evaluation with a row of metrics:
+            step, epoch, tokens_seen, learning_rate, train_loss, and val_loss,
+            for example to write them to a file.
 
     Returns:
         The final training state, with the losses of every evaluation.
@@ -406,6 +430,10 @@ def train_model_simple(  # pylint: disable=too-many-arguments,too-many-locals
             if grad_clip_norm is not None:
                 # Scale all the gradients together if their norm is too large
                 torch.nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)
+            if lr_at_step is not None:
+                # The schedule depends only on the step number, so a resumed
+                # run gets exactly the learning rates of an uninterrupted one
+                set_learning_rate(optimizer, lr_at_step(state.global_step + 1))
             optimizer.step()  # Update the weights using the gradients
 
             state.tokens_seen += input_batch.numel()
@@ -419,13 +447,26 @@ def train_model_simple(  # pylint: disable=too-many-arguments,too-many-locals
                 state.train_losses.append(train_loss)
                 state.val_losses.append(val_loss)
                 state.track_tokens_seen.append(state.tokens_seen)
+                current_lr = optimizer.param_groups[0]["lr"]
                 progress.update(
                     batch_number,
                     len(train_loader),
                     state.global_step + 1,
                     train_loss,
                     val_loss,
+                    learning_rate=current_lr,
                 )
+                if on_evaluation is not None:
+                    on_evaluation(
+                        {
+                            "step": state.global_step + 1,
+                            "epoch": epoch + 1,
+                            "tokens_seen": state.tokens_seen,
+                            "learning_rate": current_lr,
+                            "train_loss": train_loss,
+                            "val_loss": val_loss,
+                        }
+                    )
 
         synchronize(device)  # Count the steps still running on the GPU
         epoch_seconds = time.perf_counter() - epoch_start
@@ -557,11 +598,12 @@ def training_settings(text_paths: list[Path]) -> dict:
     """Collect the settings that must not change when a training resumes.
 
     The model configuration must match the saved weights. The batch size, the
-    split, and the books decide the batches of every epoch, and the learning
-    rate and weight decay are stored in the optimizer state, and gradient
-    clipping changes every update: changing them in the middle of a run would
-    make it a different training. NUM_EPOCHS is not included, so a finished
-    run can be extended with more epochs.
+    split, and the books decide the batches of every epoch; the learning rate
+    schedule, the weight decay, and gradient clipping decide every update:
+    changing them in the middle of a run would make it a different training.
+    NUM_EPOCHS is included because the cosine schedule depends on the total
+    number of steps: a different number of epochs would change the learning
+    rates of the steps already done.
 
     A setting that is None now and absent from an older checkpoint counts as
     equal, so runs saved before an option existed can still be resumed with
@@ -578,12 +620,42 @@ def training_settings(text_paths: list[Path]) -> dict:
         "tie_embeddings": TIE_EMBEDDINGS,
         "batch_size": BATCH_SIZE,
         "train_ratio": TRAIN_RATIO,
+        "num_epochs": NUM_EPOCHS,
+        "lr_schedule": LR_SCHEDULE,
         "learning_rate": LEARNING_RATE,
+        "min_learning_rate": MIN_LEARNING_RATE,
+        "warmup_fraction": WARMUP_FRACTION,
         "weight_decay": WEIGHT_DECAY,
         "grad_clip_norm": GRAD_CLIP_NORM,
         # File names and sizes: a cheap fingerprint of the corpus
         "books": [f"{path.name}:{path.stat().st_size}" for path in text_paths],
     }
+
+
+def make_lr_schedule(steps_per_epoch: int) -> Callable[[int], float]:
+    """Return the learning rate schedule of this run, a function of the step.
+
+    Args:
+        steps_per_epoch: Optimizer steps in one epoch, len(train_loader).
+
+    Returns:
+        A function of the zero-based optimizer step, for the lr_at_step
+        argument of train_model_simple.
+    """
+    total_steps = NUM_EPOCHS * steps_per_epoch
+    warmup_steps = round(WARMUP_FRACTION * total_steps)
+
+    def schedule(step: int) -> float:
+        return learning_rate(
+            step,
+            schedule=LR_SCHEDULE,
+            peak_lr=LEARNING_RATE,
+            min_lr=MIN_LEARNING_RATE,
+            warmup_steps=warmup_steps,
+            total_steps=total_steps,
+        )
+
+    return schedule
 
 
 def find_resume_checkpoint(resume: str, checkpoint_dir: Path) -> Path:
@@ -717,7 +789,11 @@ def show_summary(
             ("Start", start),
             ("Training", f"{NUM_EPOCHS} epochs | batch size {BATCH_SIZE}"),
             ("Context", f"{GPT_CONFIG_SMALL_256['context_length']} tokens"),
-            ("Learning rate", f"{LEARNING_RATE:g}"),
+            (
+                "Learning rate",
+                f"{LR_SCHEDULE} | peak {LEARNING_RATE:g}, min "
+                f"{MIN_LEARNING_RATE:g} | warmup {WARMUP_FRACTION:.0%} of the steps",
+            ),
             (
                 "Gradient clipping",
                 "off" if GRAD_CLIP_NORM is None else f"max norm {GRAD_CLIP_NORM:g}",
@@ -796,33 +872,48 @@ def main(argv: list[str] | None = None) -> int:  # pylint: disable=too-many-loca
         tokenizer, text_paths, progress
     )
 
+    # The losses of every evaluation, in a CSV file next to the checkpoints.
+    # A resumed run drops the rows written after its checkpoint.
+    metrics = MetricsLog(args.checkpoint_dir / METRICS_FILE)
+    metrics.start(resume_step=state.global_step + 1 if args.resume else None)
+
     if start_epoch >= NUM_EPOCHS:
-        print(
-            f"All {NUM_EPOCHS} epochs are already done: no training. "
-            "Raise NUM_EPOCHS to train more."
-        )
+        print(f"All {NUM_EPOCHS} epochs are already done: no training.")
     else:
-        train_model_simple(
-            model,
-            train_loader,
-            val_sample_loader,
-            optimizer,
-            device,
-            num_epochs=NUM_EPOCHS,
-            eval_freq=EVAL_FREQ,
-            eval_iter=EVAL_ITER,
-            grad_clip_norm=GRAD_CLIP_NORM,
-            start_epoch=start_epoch,
-            state=state,
-            on_epoch_end=make_checkpoint_saver(
-                args.checkpoint_dir,
-                model=model,
-                optimizer=optimizer,
-                device=device,
-                settings=settings,
-                keep=KEEP_CHECKPOINTS,
-            ),
-        )
+        try:
+            train_model_simple(
+                model,
+                train_loader,
+                val_sample_loader,
+                optimizer,
+                device,
+                num_epochs=NUM_EPOCHS,
+                eval_freq=EVAL_FREQ,
+                eval_iter=EVAL_ITER,
+                grad_clip_norm=GRAD_CLIP_NORM,
+                lr_at_step=make_lr_schedule(len(train_loader)),
+                on_evaluation=metrics.append,
+                start_epoch=start_epoch,
+                state=state,
+                on_epoch_end=make_checkpoint_saver(
+                    args.checkpoint_dir,
+                    model=model,
+                    optimizer=optimizer,
+                    device=device,
+                    settings=settings,
+                    keep=KEEP_CHECKPOINTS,
+                ),
+            )
+        except KeyboardInterrupt:
+            # Ctrl-C: the work since the last checkpoint is lost, but the run
+            # can continue from that checkpoint
+            print(
+                "\nInterrupted. Resume from the last checkpoint with: "
+                f"python -m chap4.first_training --resume "
+                f"--checkpoint-dir {args.checkpoint_dir}",
+                file=sys.stderr,
+            )
+            return 130  # The usual exit code after Ctrl-C
 
     print("")
     generate_from_validation_sample(

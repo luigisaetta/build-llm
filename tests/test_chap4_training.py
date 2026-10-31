@@ -9,6 +9,7 @@ import pytest
 import torch
 
 from build_llm.checkpoints import checkpoint_path, list_checkpoints
+from build_llm.training_log import read_metrics
 from chap4 import first_training
 
 TINY_CONFIG = {
@@ -55,22 +56,74 @@ def final_weights(directory, epoch):
     return checkpoint["model_state"]
 
 
-def test_resumed_training_matches_an_uninterrupted_one(tiny_run, monkeypatch):
-    """Stopping after epoch 1 and resuming gives the same weights after epoch 2."""
-    monkeypatch.setattr(first_training, "KEEP_CHECKPOINTS", None)
-    straight, split = tiny_run / "straight", tiny_run / "split"
+def stop_after_epoch(monkeypatch, last_epoch):
+    """Simulate Ctrl-C right after the checkpoint of an epoch is saved."""
+    real_saver = first_training.make_checkpoint_saver
 
+    def saver_that_stops(*args, **kwargs):
+        save = real_saver(*args, **kwargs)
+
+        def save_then_stop(epoch, state):
+            save(epoch, state)
+            if epoch == last_epoch:
+                raise KeyboardInterrupt
+
+        return save_then_stop
+
+    monkeypatch.setattr(first_training, "make_checkpoint_saver", saver_that_stops)
+
+
+def test_resumed_training_matches_an_uninterrupted_one(tiny_run, monkeypatch):
+    """Ctrl-C after epoch 1, then --resume, gives the weights and the metrics
+    of an uninterrupted run, with the cosine schedule and gradient clipping."""
+    monkeypatch.setattr(first_training, "KEEP_CHECKPOINTS", None)
     monkeypatch.setattr(first_training, "NUM_EPOCHS", 2)
+    straight, split = tiny_run / "straight", tiny_run / "split"
     assert first_training.main(["--checkpoint-dir", str(straight)]) == 0
 
-    monkeypatch.setattr(first_training, "NUM_EPOCHS", 1)
-    assert first_training.main(["--checkpoint-dir", str(split)]) == 0
-    monkeypatch.setattr(first_training, "NUM_EPOCHS", 2)
+    with monkeypatch.context() as interrupted:
+        stop_after_epoch(interrupted, last_epoch=1)
+        assert first_training.main(["--checkpoint-dir", str(split)]) == 130
+    # Rows written after the checkpoint, as by an interrupted epoch, are dropped
+    with (split / "metrics.csv").open("a", encoding="utf-8") as file:
+        file.write("999,2,0,0.1,1.0,1.0\n")
     assert first_training.main(["--checkpoint-dir", str(split), "--resume"]) == 0
 
     expected, resumed = final_weights(straight, 2), final_weights(split, 2)
     for name, tensor in expected.items():
         assert torch.equal(tensor, resumed[name]), name
+    assert read_metrics(split / "metrics.csv") == read_metrics(straight / "metrics.csv")
+
+
+def test_metrics_follow_the_cosine_schedule(tiny_run, monkeypatch):
+    """The learning rate rises in the warmup and ends at the minimum."""
+    monkeypatch.setattr(first_training, "NUM_EPOCHS", 2)
+    monkeypatch.setattr(first_training, "WARMUP_FRACTION", 0.3)
+    monkeypatch.setattr(first_training, "EVAL_FREQ", 2)
+    directory = tiny_run / "run"
+
+    assert first_training.main(["--checkpoint-dir", str(directory)]) == 0
+
+    rows = read_metrics(directory / "metrics.csv")
+    rates = [row["learning_rate"] for row in rows]
+    assert rows[0]["step"] == 1 and rows[0]["epoch"] == 1
+    assert rates[0] < first_training.LEARNING_RATE  # Still in the warmup
+    assert max(rates) == pytest.approx(first_training.LEARNING_RATE, rel=0.05)
+    assert rates[-1] == pytest.approx(first_training.MIN_LEARNING_RATE)
+    assert [row["step"] for row in rows] == sorted(row["step"] for row in rows)
+
+
+def test_resume_with_other_number_of_epochs_is_rejected(tiny_run, monkeypatch, capsys):
+    """The cosine schedule depends on NUM_EPOCHS, so it cannot change."""
+    directory = tiny_run / "run"
+    monkeypatch.setattr(first_training, "NUM_EPOCHS", 2)
+    with monkeypatch.context() as interrupted:
+        stop_after_epoch(interrupted, last_epoch=1)
+        assert first_training.main(["--checkpoint-dir", str(directory)]) == 130
+
+    monkeypatch.setattr(first_training, "NUM_EPOCHS", 3)
+    assert first_training.main(["--checkpoint-dir", str(directory), "--resume"]) == 1
+    assert "num_epochs: checkpoint 2, now 3" in capsys.readouterr().err
 
 
 def test_new_run_refuses_to_overwrite_checkpoints(tiny_run, monkeypatch, capsys):
@@ -98,9 +151,8 @@ def test_resume_with_other_settings_is_rejected(tiny_run, monkeypatch, capsys):
     assert first_training.main(["--checkpoint-dir", str(directory)]) == 0
 
     monkeypatch.setattr(first_training, "BATCH_SIZE", 3)
-    monkeypatch.setattr(first_training, "NUM_EPOCHS", 2)
     assert first_training.main(["--checkpoint-dir", str(directory), "--resume"]) == 1
-    assert "batch_size" in capsys.readouterr().err
+    assert "batch_size: checkpoint 2, now 3" in capsys.readouterr().err
 
 
 def test_only_the_newest_checkpoints_are_kept(tiny_run, monkeypatch):

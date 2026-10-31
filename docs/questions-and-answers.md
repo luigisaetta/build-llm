@@ -340,11 +340,11 @@ accumulated gradient, just before the optimizer step.
 
 ### Which learning rate schedules have we implemented, and why?
 
-The learning rate is the size of the steps of the optimizer. Today
-`chap4/first_training.py` keeps it **constant**, at 4e-4, from the first step
+The learning rate is the size of the steps of the optimizer. At first
+`chap4/first_training.py` kept it **constant**, at 4e-4, from the first step
 to the last. [`build_llm/lr_schedule.py`](../build_llm/lr_schedule.py) adds
-two schedules, not yet used by the script, that change it during training.
-Both start with a **linear warmup**:
+two schedules that change it during training; the script now uses the cosine
+one. Both start with a **linear warmup**:
 
 * **Warmup.** In the first steps (typically 1–2% of them) the learning rate
   grows linearly from almost 0 to its peak. At the start the weights are
@@ -381,6 +381,11 @@ lr = learning_rate(step, schedule="wsd", peak_lr=4e-4, min_lr=4e-5,
 
 There is no scheduler state to save: a training resumed from a checkpoint
 gets exactly the same learning rates as an uninterrupted one, because the
-checkpoint already stores the step number. The schedule parameters will be
-part of the settings checked at resume, so that a run cannot continue with a
-different curve by mistake.
+checkpoint already stores the step number. The schedule parameters, and the
+number of epochs, are part of the settings checked at resume, so that a run
+cannot continue with a different curve by mistake.
+
+Our choice for now is the **cosine**, with 6 epochs: the plan is fixed, so
+its limit does not matter, and every end-of-epoch checkpoint is the best
+model for that point of the training, which is useful to test it with
+`chap4/generate_from_checkpoint.py`.

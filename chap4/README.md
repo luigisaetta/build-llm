@@ -195,10 +195,15 @@ The training continues with the epoch after the checkpoint, up to
 `NUM_EPOCHS`. A resumed run is exactly the same as an uninterrupted one: the
 tests check that stopping after epoch 1 and resuming gives the same weights
 after epoch 2, on the CPU. On MPS and CUDA, some operations are not
-bit-for-bit deterministic, so the results can differ slightly. To train a
-finished run for more epochs, raise `NUM_EPOCHS` and resume. If all the
-epochs are already done, the script skips the training and only generates
-the final sample from the restored model.
+bit-for-bit deterministic, so the results can differ slightly.
+`NUM_EPOCHS` cannot change when a run resumes: with the cosine schedule, the
+total number of steps decides the learning rate of every step, including the
+steps already done. If all the epochs are already done, the script skips the
+training and only generates the final sample from the restored model.
+
+Ctrl-C stops the training with a message that shows the command to resume.
+The work done since the last checkpoint is lost, so the best moment to stop
+is right after a "Checkpoint saved" line.
 
 Things to know:
 
@@ -207,8 +212,9 @@ Things to know:
   (`KEEP_CHECKPOINTS`) and deletes the older files of the same folder after
   each save; set `KEEP_CHECKPOINTS = None` to keep them all.
 * **Same settings.** A resume is refused, with the list of differences, if
-  the model configuration, weight tying, batch size, split, learning rate,
-  weight decay, gradient clipping, or the books (names and sizes) changed.
+  the model configuration, weight tying, batch size, split, number of epochs,
+  learning rate schedule (type, peak, minimum, warmup), weight decay,
+  gradient clipping, or the books (names and sizes) changed.
   Changing them would make it a different training. A setting added later,
   such as gradient clipping, matches older checkpoints only when it is
   disabled (`None`).
@@ -267,10 +273,15 @@ noisy, and a rare batch can produce a very large gradient that undoes many
 steps of progress. Set `GRAD_CLIP_NORM = None` to train as in the book; that
 is also needed to resume a checkpoint saved before this option existed.
 
-**Learning rate schedules** are available in
-[`build_llm/lr_schedule.py`](../build_llm/lr_schedule.py), but the script does
-not use them yet: it still trains with a constant learning rate of 4e-4.
-`learning_rate(step, ...)` supports two schedules, both with a linear warmup:
+**Learning rate schedule.** The script uses the **cosine** schedule of
+[`build_llm/lr_schedule.py`](../build_llm/lr_schedule.py)
+(`LR_SCHEDULE = "cosine"`): a linear warmup over the first 2% of the steps
+(`WARMUP_FRACTION`), about 1,061 of the 53,070 steps of 6 epochs, up to the
+peak of 4e-4 (`LEARNING_RATE`), then a cosine decay down to 4e-5
+(`MIN_LEARNING_RATE`) at the last step. Before every optimizer step the
+learning rate is computed from the step number, and the progress table shows
+it. `learning_rate(step, ...)` supports two schedules, both with a linear
+warmup:
 
 | Schedule | After the warmup | Total steps |
 | --- | --- | --- |
@@ -281,8 +292,45 @@ The learning rate is a pure function of the optimizer step, with no internal
 state: a resumed training gets exactly the same learning rates as an
 uninterrupted one from the step number saved in the checkpoint.
 
+### The metrics file: losses to plot
+
+During training, every evaluation is also written to `metrics.csv`, in the
+checkpoint folder (`models/checkpoints/first_training/metrics.csv` by
+default), one row per evaluation:
+
+| Column | Meaning |
+| --- | --- |
+| `step` | one-based optimizer step |
+| `epoch` | one-based epoch |
+| `tokens_seen` | training tokens processed so far |
+| `learning_rate` | learning rate of the last step |
+| `train_loss` | training loss, on 5 random batches |
+| `val_loss` | validation loss, on the fixed validation sample |
+
+Each row is written to disk at once, so the file can be read and plotted
+while the training runs. A new run starts an empty file; a resumed run keeps
+the rows up to its checkpoint and drops the later ones, so the file always
+describes one continuous run. Read it with `read_metrics` of
+[`build_llm/training_log.py`](../build_llm/training_log.py):
+
+```python
+from build_llm.training_log import read_metrics
+
+rows = read_metrics("models/checkpoints/first_training/metrics.csv")
+steps = [row["step"] for row in rows]
+validation = [row["val_loss"] for row in rows]
+```
+
 ## Changelog
 
+* **2026-10-31: cosine schedule and metrics file.** Training uses the cosine
+  learning rate schedule (warmup over 2% of the steps, peak 4e-4, minimum
+  4e-5), shown in the progress table. `NUM_EPOCHS` and the schedule are now
+  checked when a run resumes, so a run can no longer be extended by raising
+  `NUM_EPOCHS`. Every evaluation is written to `metrics.csv` next to the
+  checkpoints; see [The metrics file](#the-metrics-file-losses-to-plot).
+  Ctrl-C stops with the command to resume. The checkpoints of the baseline run
+  were deleted.
 * **2026-10-31: the manifest defines the corpus.** `chap4/books_manifest.json`
   lists all 31 books, including the 12 committed to the repository, with their
   checksums. `prepare_books` verifies all of them, and `first_training.py`

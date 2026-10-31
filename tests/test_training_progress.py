@@ -45,6 +45,21 @@ def test_progress_best_validation_and_plain_output():
     assert "\033[" not in output
 
 
+def test_progress_shows_the_learning_rate():
+    """The learning rate column is filled when the value is given."""
+    stream = io.StringIO()
+    progress = TrainingProgress(stream)
+    progress.start_epoch(1, 1)
+    progress.update(1, 2, 1, 5.0, 5.5, learning_rate=4e-4)
+    progress.update(2, 2, 2, 4.0, 4.5)
+
+    output = stream.getvalue()
+    rows = [line for line in output.splitlines() if line.lstrip().startswith("[")]
+    assert "Learn. rate" in output
+    assert "4.00e-04" in rows[0]
+    assert "e-0" not in rows[1]  # No learning rate given: an empty column
+
+
 def test_color_can_be_disabled(monkeypatch):
     """Interactive output supports colors and respects NO_COLOR."""
     stream = io.StringIO()
