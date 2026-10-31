@@ -22,6 +22,13 @@ and the conversion step by step.
    transpose the `Conv1D` weights, and copy the token embeddings into the
    output head (GPT-2 uses weight tying). Then load the weights, tokenize a
    prompt, and generate a continuation with greedy decoding.
+2. **[Learning rate schedules: cosine and WSD](learning_rate_schedules.ipynb)**:
+   explain the warmup, the cosine schedule, and the WSD schedule (warmup,
+   stable, decay), and draw them with the numbers of our training run, next
+   to the constant learning rate used so far. Compare what happens when a run
+   is extended, and show why a schedule computed from the step number survives
+   a restart from a checkpoint. It trains no model, needs no books, and runs
+   in a few seconds; the charts need `matplotlib`, in `requirements-dev.txt`.
 
 The reusable code is in the `build_llm` package:
 
@@ -29,7 +36,9 @@ The reusable code is in the `build_llm` package:
   `generate_text_simple`;
 * [`build_llm/gpt2_weights.py`](../build_llm/gpt2_weights.py): the GPT-2
   Small configuration, the download with checksum verification, and the
-  conversion of the weights.
+  conversion of the weights;
+* [`build_llm/lr_schedule.py`](../build_llm/lr_schedule.py): the cosine and
+  WSD learning rate schedules.
 
 ## A first training run
 
@@ -240,6 +249,9 @@ uninterrupted one from the step number saved in the checkpoint.
 
 ## Changelog
 
+* **2026-10-31: notebook on learning rate schedules.**
+  `learning_rate_schedules.ipynb` explains and draws the cosine and WSD
+  schedules. `matplotlib` is added to `requirements-dev.txt` for its charts.
 * **2026-10-31: gradient clipping and learning rate schedules.** Training
   clips the gradient norm to 1.0 before every optimizer step
   (`GRAD_CLIP_NORM`), and the setting is checked when a run resumes.

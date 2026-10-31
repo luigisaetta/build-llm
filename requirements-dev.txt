@@ -4,5 +4,7 @@ pylint>=3.0
 pytest>=8.0
 # Interactive development with Jupyter notebooks.
 jupyterlab>=4.0
+# Charts in the notebooks, such as the learning rate schedules of chapter 4.
+matplotlib>=3.8
 # Needed by fastapi.testclient in the API tests.
 httpx2>=2.0

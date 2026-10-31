@@ -98,7 +98,7 @@ The chapter numbers of this repository differ from the book.
 | [Chap 1](chap1/README.md) | Text data and tokenization | The Tokenizer explorer (web UI and CLI), and a notebook on the data loader for next-token prediction | 2 |
 | [Chap 2](chap2/README.md) | Self-attention | Four notebooks: simplified attention, scaled attention with trainable query, key, and value projections, causal attention with dropout, and multi-head attention | 3 |
 | [Chap 3](chap3/README.md) | GPT architecture | Two notebooks: a dummy GPT model, from token IDs to logits, and the complete GPT-2-like model built step by step, with its architecture diagram and parameter count | 4 |
-| [Chap 4](chap4/README.md) | Pretrained weights and first training | A notebook that loads the GPT-2 Small weights from Hugging Face, without TensorFlow, and generates text; a script that trains the model from random weights on 31 public-domain books, over 10 million tokens, tracking the training and validation losses | 5 |
+| [Chap 4](chap4/README.md) | Pretrained weights and first training | A notebook that loads the GPT-2 Small weights from Hugging Face, without TensorFlow, and generates text; a notebook that explains and draws the cosine and WSD learning rate schedules; a script that trains the model from random weights on 31 public-domain books, over 10 million tokens, tracking the training and validation losses | 5 |
 
 ## Getting started
 
