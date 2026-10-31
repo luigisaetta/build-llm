@@ -1,6 +1,6 @@
 """
 Author: L. Saetta
-Date Last Modified: 2026-10-30
+Date Last Modified: 2026-10-31
 License: Apache-2.0
 Description: A first training loop: pre-train a GPT-2 Small-sized model, from
     random weights, on twelve public-domain books (see TEXT_PATHS and NOTICE).
@@ -33,6 +33,7 @@ import torch
 from build_llm.dataloaders import create_dataloader_v1, split_documents
 from build_llm.device import get_device
 from build_llm.gpt2 import GPTModel, generate_text_simple
+from build_llm.training_progress import TrainingProgress
 
 # The dimensions of GPT-2 Small, with a context of 256 tokens instead of 1024:
 # shorter sequences make each training step faster and use less memory.
@@ -49,7 +50,7 @@ GPT_CONFIG_SMALL_256 = {
 # Twelve public-domain books, about 1,050,000 tokens in all; see NOTICE. They
 # are located from this file, so that the script works from any working
 # directory. Each one is split on its own into training and validation text.
-BOOKS_DIR = Path(__file__).resolve().parent
+BOOKS_DIR = Path(__file__).resolve().parent / "books"
 TEXT_PATHS = [
     BOOKS_DIR / "the-time-machine.txt",  # H. G. Wells, 1895
     BOOKS_DIR / "ethan-frome.txt",  # Edith Wharton, 1911
@@ -260,7 +261,8 @@ def train_model_simple(  # pylint: disable=too-many-arguments,too-many-locals
     """Train the model, evaluating it periodically.
 
     Every eval_freq optimizer steps, the training and validation losses are
-    computed and printed. At the end of each epoch, its duration is printed,
+    computed and shown in a progress table. The final step of each epoch is
+    also evaluated. Each epoch ends with loss trends and its duration,
     evaluations included.
 
     Args:
@@ -280,12 +282,16 @@ def train_model_simple(  # pylint: disable=too-many-arguments,too-many-locals
     # Initialize lists to track losses and tokens seen
     train_losses, val_losses, track_tokens_seen = [], [], []
     tokens_seen, global_step = 0, -1
+    progress = TrainingProgress()
 
     for epoch in range(num_epochs):
+        progress.start_epoch(epoch + 1, num_epochs)
         model.train()  # Enable dropout
         epoch_start = time.perf_counter()
 
-        for input_batch, target_batch in train_loader:
+        for batch_number, (input_batch, target_batch) in enumerate(
+            train_loader, start=1
+        ):
             optimizer.zero_grad()  # Reset the gradients of the previous step
 
             loss = calc_loss_batch(input_batch, target_batch, model, device)
@@ -295,22 +301,25 @@ def train_model_simple(  # pylint: disable=too-many-arguments,too-many-locals
             tokens_seen += input_batch.numel()
             global_step += 1
 
-            # Evaluation step, every eval_freq steps (step 0 included)
-            if global_step % eval_freq == 0:
+            # Include the final batch so every epoch reports its completed progress.
+            if global_step % eval_freq == 0 or batch_number == len(train_loader):
                 train_loss, val_loss = evaluate_model(
                     model, train_loader, val_loader, device, eval_iter
                 )
                 train_losses.append(train_loss)
                 val_losses.append(val_loss)
                 track_tokens_seen.append(tokens_seen)
-                print(
-                    f"Ep {epoch+1} (Step {global_step:05d}): "
-                    f"Train loss {train_loss:.3f}, Val loss {val_loss:.3f}"
+                progress.update(
+                    batch_number,
+                    len(train_loader),
+                    global_step + 1,
+                    train_loss,
+                    val_loss,
                 )
 
         synchronize(device)  # Count the steps still running on the GPU
         epoch_seconds = time.perf_counter() - epoch_start
-        print(f"Epoch {epoch + 1} completed in {epoch_seconds:.1f} s")
+        progress.finish_epoch(epoch_seconds, train_losses, val_losses)
 
     return train_losses, val_losses, track_tokens_seen
 
@@ -326,8 +335,21 @@ def main() -> int:
     """
     torch.manual_seed(123)  # Same initial weights and batch order at every run
     device = get_device()
-    print(f"Device: {device}")
-    print("")
+    progress = TrainingProgress()
+    progress.start_demo(
+        "A First GPT Training Run",
+        [
+            ("Device", str(device)),
+            ("Model", "GPT-2 Small | random weights"),
+            ("Training", f"{NUM_EPOCHS} epochs | batch size {BATCH_SIZE}"),
+            ("Context", f"{GPT_CONFIG_SMALL_256['context_length']} tokens"),
+            ("Learning rate", f"{LEARNING_RATE:g}"),
+            (
+                "Split per book",
+                f"{TRAIN_RATIO:.0%} training / {1 - TRAIN_RATIO:.0%} validation",
+            ),
+        ],
+    )
 
     model = GPTModel(GPT_CONFIG_SMALL_256)
     model.to(device)
@@ -337,22 +359,22 @@ def main() -> int:
     tokenizer = tiktoken.get_encoding("gpt2")
 
     books = [path.read_text(encoding="utf-8") for path in TEXT_PATHS]
-    print("Text data:")
-    for path, book in zip(TEXT_PATHS, books):
-        print(
-            f"  {path.name}: {len(book):,} characters, "
-            f"{len(tokenizer.encode(book)):,} tokens"
-        )
+    progress.show_books(
+        [
+            (path.name, len(book), len(tokenizer.encode(book)))
+            for path, book in zip(TEXT_PATHS, books)
+        ]
+    )
 
     # Split each book on its own: the first 90% of every book trains, the last
     # 10% validates. Splitting the concatenated text once would put only the
     # end of the last book in the validation set. Inside each set, the books
     # are separated by the GPT-2 end-of-text token.
     train_text, val_text = split_documents(books, TRAIN_RATIO)
-    for name, text in (("Training", train_text), ("Validation", val_text)):
-        tokens = tokenizer.encode(text, allowed_special={"<|endoftext|>"})
-        print(f"  {name} set: {len(tokens):,} tokens")
-    print("")
+    token_counts = [
+        len(tokenizer.encode(text, allowed_special={"<|endoftext|>"}))
+        for text in (train_text, val_text)
+    ]
 
     context_length = GPT_CONFIG_SMALL_256["context_length"]
 
@@ -376,7 +398,12 @@ def main() -> int:
         shuffle=False,
         num_workers=0,
     )
-    print(f"Batches: {len(train_loader)} training, {len(val_loader)} validation")
+    progress.show_split(
+        [
+            ("Training", token_counts[0], len(train_loader)),
+            ("Validation", token_counts[1], len(val_loader)),
+        ]
+    )
 
     train_model_simple(
         model,

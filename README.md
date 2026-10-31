@@ -188,7 +188,7 @@ which made this project possible.
   modified for this repository, and each one states its origin.
 * `chap1/the-verdict.txt` is the short story "The Verdict" by Edith Wharton
   (1908), in the public domain, taken from the same repository.
-* The twelve books in `chap4/` used for training, such as "The Time Machine"
+* The twelve books in `chap4/books/` used for training, such as "The Time Machine"
   by H. G. Wells and "Pride and Prejudice" by Jane Austen, are in the public
   domain. They were converted to plain text from the
   [Standard Ebooks](https://standardebooks.org/) editions, whose

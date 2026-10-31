@@ -53,7 +53,7 @@ Obtained:  from https://github.com/rasbt/LLMs-from-scratch
 3. Training texts of Chapter 4
 ------------------------------
 
-File:      chap4/a-christmas-carol.txt
+File:      chap4/books/a-christmas-carol.txt
 Content:   "A Christmas Carol", a novella by Charles Dickens, first
            published in 1843. The text is in the public domain.
 Obtained:  from the Standard Ebooks edition,
@@ -70,7 +70,7 @@ Changes:   converted from XHTML to plain text: one paragraph per block, the
            page omitted; invisible word joiners and typographic spaces
            removed.
 
-File:      chap4/dr-jekyll-and-mr-hyde.txt
+File:      chap4/books/dr-jekyll-and-mr-hyde.txt
 Content:   "The Strange Case of Dr. Jekyll and Mr. Hyde", a novella by
            Robert Louis Stevenson, first published in 1886. The text is in
            the public domain.
@@ -87,7 +87,7 @@ Changes:   converted from XHTML to plain text: one paragraph per block,
            license page omitted; invisible word joiners and typographic
            spaces removed.
 
-File:      chap4/dracula.txt
+File:      chap4/books/dracula.txt
 Content:   "Dracula", a novel by Bram Stoker, first published in 1897. The
            text is in the public domain.
 Obtained:  from the Standard Ebooks edition,
@@ -103,7 +103,7 @@ Changes:   converted from XHTML to plain text: one paragraph per block,
            imprint, colophon, and license page) omitted; invisible word
            joiners and typographic spaces removed.
 
-File:      chap4/ethan-frome.txt
+File:      chap4/books/ethan-frome.txt
 Content:   "Ethan Frome", a novel by Edith Wharton, first published in 1911.
            The text is in the public domain.
 Obtained:  from the Standard Ebooks edition,
@@ -120,7 +120,7 @@ Changes:   converted from XHTML to plain text: one paragraph per block,
            page, imprint, colophon, and license page omitted; invisible
            word joiners and typographic spaces removed.
 
-File:      chap4/frankenstein.txt
+File:      chap4/books/frankenstein.txt
 Content:   "Frankenstein; or, The Modern Prometheus", a novel by Mary
            Shelley, first published in 1818. The text is in the public
            domain.
@@ -139,7 +139,7 @@ Changes:   converted from XHTML to plain text: one paragraph per block,
            references omitted; invisible word joiners and typographic
            spaces removed.
 
-File:      chap4/heart-of-darkness.txt
+File:      chap4/books/heart-of-darkness.txt
 Content:   "Heart of Darkness", a novella by Joseph Conrad, first published
            in 1899. The text is in the public domain.
 Obtained:  from the Standard Ebooks edition of Conrad's short fiction,
@@ -154,7 +154,7 @@ Changes:   converted from XHTML to plain text: one paragraph per block,
            collection, the title page, imprint, colophon, and license page
            omitted; invisible word joiners and typographic spaces removed.
 
-File:      chap4/pride-and-prejudice.txt
+File:      chap4/books/pride-and-prejudice.txt
 Content:   "Pride and Prejudice", a novel by Jane Austen, first published
            in 1813. The text is in the public domain.
 Obtained:  from the Standard Ebooks edition,
@@ -171,7 +171,7 @@ Changes:   converted from XHTML to plain text: one paragraph per block,
            imprint, colophon, and license page) omitted; invisible word
            joiners and typographic spaces removed.
 
-File:      chap4/the-hound-of-the-baskervilles.txt
+File:      chap4/books/the-hound-of-the-baskervilles.txt
 Content:   "The Hound of the Baskervilles", a novel by Arthur Conan Doyle,
            first published in 1902. The text is in the public domain.
 Obtained:  from the Standard Ebooks edition,
@@ -188,7 +188,7 @@ Changes:   converted from XHTML to plain text: one paragraph per block,
            imprint, colophon, and license page) omitted; invisible word
            joiners and typographic spaces removed.
 
-File:      chap4/the-picture-of-dorian-gray.txt
+File:      chap4/books/the-picture-of-dorian-gray.txt
 Content:   "The Picture of Dorian Gray", a novel by Oscar Wilde, first
            published in 1890. The text is in the public domain.
 Obtained:  from the Standard Ebooks edition,
@@ -205,7 +205,7 @@ Changes:   converted from XHTML to plain text: one paragraph per block,
            imprint, colophon, and license page) omitted; invisible word
            joiners and typographic spaces removed.
 
-File:      chap4/the-time-machine.txt
+File:      chap4/books/the-time-machine.txt
 Content:   "The Time Machine", a novel by H. G. Wells, first published in
            1895. The text is in the public domain.
 Obtained:  from the Standard Ebooks edition,
@@ -221,7 +221,7 @@ Changes:   converted from XHTML to plain text: one paragraph per block,
            license page, and the one endnote with its reference omitted,
            and invisible word joiners and typographic spaces removed.
 
-File:      chap4/the-war-of-the-worlds.txt
+File:      chap4/books/the-war-of-the-worlds.txt
 Content:   "The War of the Worlds", a novel by H. G. Wells, first published
            in 1898. The text is in the public domain.
 Obtained:  from the Standard Ebooks edition,
@@ -239,7 +239,7 @@ Changes:   converted from XHTML to plain text: one paragraph per block, the
            and license page omitted; invisible word joiners and typographic
            spaces removed.
 
-File:      chap4/treasure-island.txt
+File:      chap4/books/treasure-island.txt
 Content:   "Treasure Island", a novel by Robert Louis Stevenson, first
            published in 1883. The text is in the public domain.
 Obtained:  from the Standard Ebooks edition,
