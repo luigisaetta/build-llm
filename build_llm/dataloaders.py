@@ -1,6 +1,6 @@
 """
 Author: L. Saetta
-Date Last Modified: 2026-10-30
+Date Last Modified: 2026-10-31
 License: Apache-2.0
 Description: Dataset and data loader for next-token prediction: a text is split
     into input and target sequences with a sliding window. Also a per-document
@@ -11,7 +11,7 @@ Origin: derived from the code of Chapter 2 of LLMs-from-scratch
 Raschka, licensed under the Apache License 2.0 (see
 LICENSES/Apache-2.0-LLMs-from-scratch.txt). Modified by L. Saetta (2026):
 docstrings, type hints, and input validation added; keyword-only options;
-split_documents added.
+split_document_parts and split_documents added.
 """
 
 from collections.abc import Sequence
@@ -133,6 +133,41 @@ def create_dataloader_v1(  # pylint: disable=too-many-arguments
     )
 
 
+def split_document_parts(
+    documents: Sequence[str], train_ratio: float
+) -> tuple[list[str], list[str]]:
+    """Split every document into a training and a validation part.
+
+    Each document is cut at the same fraction of its characters: the first
+    train_ratio goes to training, the rest to validation. The parts are
+    returned separately, one per document, for example to sample the
+    validation set book by book.
+
+    Args:
+        documents: The texts, for example one string per book.
+        train_ratio: Fraction of each document used for training, between 0
+            and 1, both excluded.
+
+    Returns:
+        The training parts and the validation parts, in the order of
+        documents.
+
+    Raises:
+        ValueError: If documents is empty, or train_ratio is not between 0 and 1.
+    """
+    if not documents:
+        raise ValueError("documents must contain at least one text.")
+    if not 0 < train_ratio < 1:
+        raise ValueError("train_ratio must be between 0 and 1, both excluded.")
+
+    train_parts, val_parts = [], []
+    for document in documents:
+        split_idx = int(train_ratio * len(document))
+        train_parts.append(document[:split_idx])
+        val_parts.append(document[split_idx:])
+    return train_parts, val_parts
+
+
 def split_documents(
     documents: Sequence[str], train_ratio: float, separator: str = END_OF_TEXT
 ) -> tuple[str, str]:
@@ -157,14 +192,5 @@ def split_documents(
     Raises:
         ValueError: If documents is empty, or train_ratio is not between 0 and 1.
     """
-    if not documents:
-        raise ValueError("documents must contain at least one text.")
-    if not 0 < train_ratio < 1:
-        raise ValueError("train_ratio must be between 0 and 1, both excluded.")
-
-    train_parts, val_parts = [], []
-    for document in documents:
-        split_idx = int(train_ratio * len(document))
-        train_parts.append(document[:split_idx])
-        val_parts.append(document[split_idx:])
+    train_parts, val_parts = split_document_parts(documents, train_ratio)
     return separator.join(train_parts), separator.join(val_parts)

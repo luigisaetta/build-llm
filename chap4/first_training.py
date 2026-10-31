@@ -34,12 +34,18 @@ from pathlib import Path
 
 import tiktoken
 import torch
+from torch.utils.data import DataLoader
 
-from build_llm.dataloaders import create_dataloader_v1, split_documents
+from build_llm.dataloaders import (
+    END_OF_TEXT,
+    create_dataloader_v1,
+    split_document_parts,
+)
 from build_llm.device import get_device
 from build_llm.gpt2 import GPTModel, generate_text_simple
 from build_llm.model_parameters import count_parameters
 from build_llm.training_progress import TrainingProgress
+from build_llm.validation_sample import create_validation_sample_loader
 
 # The dimensions of GPT-2 Small, with a context of 256 tokens instead of 1024:
 # shorter sequences make each training step faster and use less memory.
@@ -78,7 +84,13 @@ NUM_EPOCHS = 6
 LEARNING_RATE = 0.0004
 WEIGHT_DECAY = 0.1
 EVAL_FREQ = 10  # Evaluate every EVAL_FREQ optimizer steps
-EVAL_ITER = 5  # Number of batches used for each evaluation
+EVAL_ITER = 5  # Training batches used for each evaluation
+# The validation loss of each evaluation uses a fixed sample of validation
+# sequences, chosen once at regular intervals inside every book: 100 sequences
+# are 25 batches of 4. The same sample at every evaluation makes the losses
+# comparable from one step to the next; spreading it over all the books makes
+# it represent the whole validation set. See build_llm/validation_sample.py.
+VAL_SAMPLE_SEQUENCES = 100
 PROMPT_TOKENS = 50  # Tokens of the validation sample used as the prompt
 NEW_TOKENS = 50  # Tokens generated after the prompt
 
@@ -168,14 +180,18 @@ def evaluate_model(  # pylint: disable=too-many-arguments,too-many-positional-ar
 ) -> tuple[float, float]:
     """Compute the training and validation losses, without dropout or gradients.
 
+    The training loss uses the first eval_iter batches of the shuffled training
+    loader, so a different random subset each time. The validation loss uses
+    all the batches of val_loader: pass the fixed validation sample, so that
+    every evaluation measures the same sequences, spread over all the books.
     The model is switched to evaluation mode, then back to training mode.
 
     Args:
         model: The model being trained.
         train_loader: Training batches.
-        val_loader: Validation batches.
+        val_loader: The fixed validation sample, evaluated in full.
         device: The device of the model.
-        eval_iter: Number of batches of each loader to use.
+        eval_iter: Number of training batches to use.
 
     Returns:
         The training loss and the validation loss.
@@ -185,7 +201,7 @@ def evaluate_model(  # pylint: disable=too-many-arguments,too-many-positional-ar
         train_loss = calc_loss_loader(
             train_loader, model, device, num_batches=eval_iter
         )
-        val_loss = calc_loss_loader(val_loader, model, device, num_batches=eval_iter)
+        val_loss = calc_loss_loader(val_loader, model, device)
     model.train()
     return train_loss, val_loss
 
@@ -282,7 +298,8 @@ def train_model_simple(  # pylint: disable=too-many-arguments,too-many-locals
     Args:
         model: The model to train, already on device.
         train_loader: Training batches.
-        val_loader: Validation batches.
+        val_loader: The fixed validation sample, evaluated in full at every
+            evaluation.
         optimizer: The optimizer of the model parameters.
         device: The device of the model.
         num_epochs: Number of passes over the training data.
@@ -336,6 +353,79 @@ def train_model_simple(  # pylint: disable=too-many-arguments,too-many-locals
         progress.finish_epoch(epoch_seconds, train_losses, val_losses)
 
     return train_losses, val_losses, track_tokens_seen
+
+
+def create_loaders(
+    tokenizer: tiktoken.Encoding, books: list[str], progress: TrainingProgress
+) -> tuple[DataLoader, DataLoader, DataLoader]:
+    """Split the books and create the training and validation loaders.
+
+    Each book is split on its own: the first TRAIN_RATIO of every book trains,
+    the rest validates. Splitting the concatenated text once would put only
+    the end of the last book in the validation set. Inside each set, the books
+    are separated by the GPT-2 end-of-text token. The token and batch counts
+    are printed with progress.
+
+    Args:
+        tokenizer: The GPT-2 tokenizer.
+        books: The text of each book.
+        progress: The printer of the training summary.
+
+    Returns:
+        The training loader (shuffled), the full validation loader (not
+        shuffled, used for the final generation), and the fixed validation
+        sample used by the periodic evaluations.
+    """
+    train_parts, val_parts = split_document_parts(books, TRAIN_RATIO)
+    train_text = END_OF_TEXT.join(train_parts)
+    val_text = END_OF_TEXT.join(val_parts)
+    context_length = GPT_CONFIG_SMALL_256["context_length"]
+
+    train_loader = create_dataloader_v1(
+        tokenizer,
+        train_text,
+        batch_size=BATCH_SIZE,
+        max_length=context_length,
+        stride=context_length,
+        drop_last=True,
+        shuffle=True,
+        num_workers=0,
+    )
+    val_loader = create_dataloader_v1(
+        tokenizer,
+        val_text,
+        batch_size=BATCH_SIZE,
+        max_length=context_length,
+        stride=context_length,
+        drop_last=False,
+        shuffle=False,
+        num_workers=0,
+    )
+    # The fixed sample of the periodic validation loss: the same sequences at
+    # every evaluation, taken at regular intervals inside every book
+    val_sample_loader = create_validation_sample_loader(
+        tokenizer,
+        val_parts,
+        num_sequences=VAL_SAMPLE_SEQUENCES,
+        batch_size=BATCH_SIZE,
+        max_length=context_length,
+    )
+
+    def count_tokens(text: str) -> int:
+        return len(tokenizer.encode(text, allowed_special={END_OF_TEXT}))
+
+    progress.show_split(
+        [
+            ("Training", count_tokens(train_text), len(train_loader)),
+            ("Validation", count_tokens(val_text), len(val_loader)),
+            (
+                "Val. sample",
+                len(val_sample_loader.dataset) * context_length,
+                len(val_sample_loader),
+            ),
+        ]
+    )
+    return train_loader, val_loader, val_sample_loader
 
 
 #
@@ -393,49 +483,14 @@ def main() -> int:
         ]
     )
 
-    # Split each book on its own: the first 90% of every book trains, the last
-    # 10% validates. Splitting the concatenated text once would put only the
-    # end of the last book in the validation set. Inside each set, the books
-    # are separated by the GPT-2 end-of-text token.
-    train_text, val_text = split_documents(books, TRAIN_RATIO)
-    token_counts = [
-        len(tokenizer.encode(text, allowed_special={"<|endoftext|>"}))
-        for text in (train_text, val_text)
-    ]
-
-    context_length = GPT_CONFIG_SMALL_256["context_length"]
-
-    train_loader = create_dataloader_v1(
-        tokenizer,
-        train_text,
-        batch_size=BATCH_SIZE,
-        max_length=context_length,
-        stride=context_length,
-        drop_last=True,
-        shuffle=True,
-        num_workers=0,
-    )
-    val_loader = create_dataloader_v1(
-        tokenizer,
-        val_text,
-        batch_size=BATCH_SIZE,
-        max_length=context_length,
-        stride=context_length,
-        drop_last=False,
-        shuffle=False,
-        num_workers=0,
-    )
-    progress.show_split(
-        [
-            ("Training", token_counts[0], len(train_loader)),
-            ("Validation", token_counts[1], len(val_loader)),
-        ]
+    train_loader, val_loader, val_sample_loader = create_loaders(
+        tokenizer, books, progress
     )
 
     train_model_simple(
         model,
         train_loader,
-        val_loader,
+        val_sample_loader,
         optimizer,
         device,
         num_epochs=NUM_EPOCHS,
