@@ -61,9 +61,27 @@ the end of the last book in the validation set, so the validation loss
 would measure one book only. Inside each set, the books are separated by the
 GPT-2 end-of-text token, `<|endoftext|>`.
 
+**Weight tying** is enabled, an addition to the book (`TIE_EMBEDDINGS = True`
+in the script, the `tie_embeddings` argument of `GPTModel`). The output head,
+which turns each final vector into one score per vocabulary token, and the
+token embedding table are both `(vocab_size, emb_dim)` matrices: with weight
+tying they are one shared matrix, as in the original GPT-2. Compared with the
+book:
+
+* the model has 38,597,376 fewer parameters: 123,822,336 instead of
+  162,419,712;
+* every update of the output head also improves the token embeddings, which
+  helps with little training data;
+* the shared matrix is initialized as in GPT-2, with standard deviation 0.02.
+  The default initialization of `nn.Embedding` (standard deviation 1) would
+  make the first loss about 475 instead of about 11, ln(50,257).
+
+Set `TIE_EMBEDDINGS = False` to train the model of the book.
+
 The script uses a context of 256 tokens (`GPT_CONFIG_SMALL_256`). It prints
 the title **A First GPT Training Run**, a compact configuration summary
-(device, model, epochs, batch size, context, learning rate, and split),
+(device, model with or without weight tying, parameter count, epochs,
+batch size, context, learning rate, and split),
 an aligned book table with character and token totals, and token and batch
 counts for the training and validation sets. It then prints
 an aligned table at the first optimizer update, every 10 steps, and at the

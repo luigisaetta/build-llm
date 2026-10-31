@@ -5,11 +5,14 @@ License: MIT
 Description: Tests for the GPT-2 building blocks in build_llm.gpt2.
 """
 
+import math
+
 import pytest
 import torch
 import torch.nn.functional as F
 
 from build_llm.gpt2 import (
+    EMBEDDING_INIT_STD,
     GELU,
     FeedForward,
     GPTModel,
@@ -139,6 +142,20 @@ def test_tied_model_shares_one_weight_tensor():
     assert count_parameters(model) == expected["total"]
     untied = count_parameters(GPTModel(TINY_CONFIG))
     assert untied - count_parameters(model) == 50 * 16  # vocab_size * emb_dim
+
+
+def test_tied_model_starts_with_a_sensible_loss():
+    """With tying, the GPT-2 initialization keeps the first loss near ln(vocab)."""
+    model = GPTModel(TINY_CONFIG, tie_embeddings=True).eval()
+    token_ids = torch.randint(0, 50, (4, 8))
+
+    with torch.no_grad():
+        logits = model(token_ids)
+    loss = F.cross_entropy(logits.flatten(0, 1), token_ids.flatten())
+
+    # A model with no knowledge predicts about uniformly: loss = ln(50) = 3.9
+    assert abs(loss.item() - math.log(50)) < 0.5
+    assert abs(model.tok_emb.weight.std().item() - EMBEDDING_INIT_STD) < 0.005
 
 
 def test_tied_weights_stay_shared_after_a_training_step():

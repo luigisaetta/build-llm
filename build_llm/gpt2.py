@@ -19,6 +19,14 @@ constructor argument, not a field of the configuration dictionary, so the
 configurations of the book keep their meaning. With the default, GPTModel
 behaves exactly as in the book.
 
+With tie_embeddings=True, the token and position embeddings are also
+initialized as in GPT-2, from a normal distribution with standard deviation
+0.02 (initializer_range in the GPT-2 config.json). The default initialization
+of nn.Embedding, standard deviation 1, suits an input table, but as the weight
+of the output head it gives logits about 50 times too large: with
+GPT_CONFIG_SMALL_256 the initial loss would be about 475 instead of about 11,
+that is ln(vocab_size).
+
 All the modules work on tensors of shape (batch_size, num_tokens, emb_dim),
 except GPTModel, which maps token IDs to logits. The attribute names follow the
 book (for example W_query and trf_blocks), so that the state_dict keys match
@@ -29,6 +37,10 @@ from collections.abc import Mapping
 
 import torch
 from torch import nn
+
+# Standard deviation of the GPT-2 embedding initialization (initializer_range
+# in its config.json). Used by GPTModel when tie_embeddings is True.
+EMBEDDING_INIT_STD = 0.02
 
 
 # pylint: disable=invalid-name,too-many-instance-attributes
@@ -288,6 +300,8 @@ class GPTModel(nn.Module):
             token embeddings share one (vocab_size, emb_dim) weight tensor
             (weight tying, as in GPT-2): the model has vocab_size * emb_dim
             fewer parameters, and training updates both layers together.
+            The token and position embeddings are then initialized with
+            standard deviation EMBEDDING_INIT_STD, as in GPT-2.
     """
 
     def __init__(self, cfg: Mapping, tie_embeddings: bool = False):
@@ -309,6 +323,11 @@ class GPTModel(nn.Module):
             # makes the two layers share one tensor; the separate weight
             # created by nn.Linear is discarded.
             self.out_head.weight = self.tok_emb.weight
+            # The shared matrix now also produces the logits, so it needs the
+            # small GPT-2 initialization; position embeddings get the same
+            # scale, so that tokens and positions start balanced.
+            nn.init.normal_(self.tok_emb.weight, mean=0.0, std=EMBEDDING_INIT_STD)
+            nn.init.normal_(self.pos_emb.weight, mean=0.0, std=EMBEDDING_INIT_STD)
 
     def forward(self, in_idx: torch.Tensor) -> torch.Tensor:
         """Compute the logits.

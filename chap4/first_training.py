@@ -10,14 +10,19 @@ Origin: derived from the code of Chapter 5 of LLMs-from-scratch
 Raschka, licensed under the Apache License 2.0 (see
 LICENSES/Apache-2.0-LLMs-from-scratch.txt). Modified by L. Saetta (2026):
 docstrings added, the data path made independent of the working directory,
-the code organized in functions with a main entry point, and a training and
-validation split made per book.
+the code organized in functions with a main entry point, a training and
+validation split made per book, and weight tying enabled (TIE_EMBEDDINGS).
 
 Run it from the repository root:
 
     python -m chap4.first_training
 
-The dataset (about 1,050,000 tokens) is still small for a model of about 163M
+Weight tying: the output head shares its weights with the token embeddings,
+as in the original GPT-2 and unlike the book. The model has about 124M
+parameters instead of about 163M, with the same architecture; see
+TIE_EMBEDDINGS below.
+
+The dataset (about 1,050,000 tokens) is still small for a model of about 124M
 parameters, so after some epochs the model tends to memorize the text: the
 training loss keeps going down, while the validation loss stops improving.
 That is expected here.
@@ -33,6 +38,7 @@ import torch
 from build_llm.dataloaders import create_dataloader_v1, split_documents
 from build_llm.device import get_device
 from build_llm.gpt2 import GPTModel, generate_text_simple
+from build_llm.model_parameters import count_parameters
 from build_llm.training_progress import TrainingProgress
 
 # The dimensions of GPT-2 Small, with a context of 256 tokens instead of 1024:
@@ -46,6 +52,20 @@ GPT_CONFIG_SMALL_256 = {
     "drop_rate": 0.1,  # Dropout rate
     "qkv_bias": False,  # Bias in the query, key, and value projections
 }
+
+# Weight tying, an addition to the book (see build_llm/gpt2.py). The output
+# head turns each final vector into one score per vocabulary token, and the
+# token embedding table turns each token into a vector: both are
+# (vocab_size, emb_dim) matrices. With TIE_EMBEDDINGS = True they are one
+# shared matrix, as in GPT-2:
+# * the model has vocab_size * emb_dim = 50,257 * 768 = 38,597,376 fewer
+#   parameters: about 124M instead of about 163M;
+# * every update of the output head also updates the embeddings of the
+#   tokens, which helps when, as here, the training data is small;
+# * GPTModel initializes the shared matrix as GPT-2 does (standard deviation
+#   0.02), so that the first loss is close to ln(vocab_size), about 10.8.
+# Set it to False to train the model of the book, with a separate output head.
+TIE_EMBEDDINGS = True
 
 # Twelve public-domain books, about 1,050,000 tokens in all; see NOTICE. They
 # are located from this file, so that the script works from any working
@@ -335,12 +355,18 @@ def main() -> int:
     """
     torch.manual_seed(123)  # Same initial weights and batch order at every run
     device = get_device()
+
+    # The model is created before the summary, to show its parameter count
+    model = GPTModel(GPT_CONFIG_SMALL_256, tie_embeddings=TIE_EMBEDDINGS)
+    tying = "weight tying" if TIE_EMBEDDINGS else "separate output head"
+
     progress = TrainingProgress()
     progress.start_demo(
         "A First GPT Training Run",
         [
             ("Device", str(device)),
-            ("Model", "GPT-2 Small | random weights"),
+            ("Model", f"GPT-2 Small | random weights | {tying}"),
+            ("Parameters", f"{count_parameters(model):,}"),
             ("Training", f"{NUM_EPOCHS} epochs | batch size {BATCH_SIZE}"),
             ("Context", f"{GPT_CONFIG_SMALL_256['context_length']} tokens"),
             ("Learning rate", f"{LEARNING_RATE:g}"),
@@ -351,7 +377,6 @@ def main() -> int:
         ],
     )
 
-    model = GPTModel(GPT_CONFIG_SMALL_256)
     model.to(device)
     optimizer = torch.optim.AdamW(
         model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY
