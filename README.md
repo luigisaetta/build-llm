@@ -130,8 +130,8 @@ start from [Chapter 1](chap1/README.md).
 - 🚧 **Pre-training**: cross-entropy loss and a training loop with AdamW, on
   31 public-domain books (over 10 million tokens), with a training and
   validation split per book
-  ([`chap4/first_training.py`](chap4/first_training.py)); next, saving and
-  loading checkpoints.
+  ([`chap4/first_training.py`](chap4/first_training.py)), with a checkpoint
+  at the end of every epoch and resume with `--resume`.
 - 🚧 **Evaluation**: training and validation loss during training, which show
   when the model starts to overfit
   ([`chap4/first_training.py`](chap4/first_training.py)); next, perplexity.

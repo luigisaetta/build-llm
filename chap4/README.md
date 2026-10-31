@@ -137,7 +137,8 @@ root:
 python -m chap4.first_training
 ```
 
-Training downloads nothing and saves nothing. With the current configuration
+Training downloads nothing. It saves a checkpoint at the end of every epoch
+(see below). With the current configuration
 (context 256, batch size 4), the per-book 90/10 split produces
 **9,058,141 training tokens (8,845 batches per epoch)** and
 **998,936 validation tokens (976 batches)**, including document
@@ -156,8 +157,68 @@ the 31-book corpus has not been recorded yet.
 
 The data loader is in [`build_llm/dataloaders.py`](../build_llm/dataloaders.py).
 
+### Checkpoints and resume
+
+At the end of every epoch the script saves a checkpoint in
+`models/checkpoints/first_training/`, as `epoch-001.pt`, `epoch-002.pt`, and
+so on. The `models/` folder is ignored by Git. A checkpoint holds everything
+needed to continue as if the training had never stopped:
+
+* the model weights;
+* the AdamW state, two running averages per parameter;
+* the random number generator states, which decide the batch order of the
+  next epoch and the dropout masks;
+* the step and token counters and the loss history;
+* the settings that must not change between runs.
+
+To resume an interrupted training from the most recent checkpoint, or from a
+given one:
+
+```bash
+python -m chap4.first_training --resume
+```
+
+```bash
+python -m chap4.first_training --resume models/checkpoints/first_training/epoch-002.pt
+```
+
+The training continues with the epoch after the checkpoint, up to
+`NUM_EPOCHS`. A resumed run is exactly the same as an uninterrupted one: the
+tests check that stopping after epoch 1 and resuming gives the same weights
+after epoch 2, on the CPU. On MPS and CUDA, some operations are not
+bit-for-bit deterministic, so the results can differ slightly. To train a
+finished run for more epochs, raise `NUM_EPOCHS` and resume. If all the
+epochs are already done, the script skips the training and only generates
+the final sample from the restored model.
+
+Things to know:
+
+* **Size.** With weight tying, a checkpoint is about 1.5 GB: 0.5 GB of
+  weights and 1 GB of AdamW state. The script keeps the 2 most recent ones
+  (`KEEP_CHECKPOINTS`) and deletes the older files of the same folder after
+  each save; set `KEEP_CHECKPOINTS = None` to keep them all.
+* **Same settings.** A resume is refused, with the list of differences, if
+  the model configuration, weight tying, batch size, split, learning rate,
+  weight decay, or the books (names and sizes) changed. Changing them would
+  make it a different training.
+* **No overwriting.** A new run, without `--resume`, refuses to start if the
+  checkpoint folder already holds checkpoints. To start a separate run,
+  choose another folder with `--checkpoint-dir`, for example
+  `--checkpoint-dir models/checkpoints/run-2`.
+* **Safe loading.** Checkpoints are written to a temporary file and then
+  renamed, so an interruption while saving never leaves a corrupted file.
+  They are read with `torch.load(weights_only=True)`, which never executes
+  code from the file.
+
+The code is in [`build_llm/checkpoints.py`](../build_llm/checkpoints.py).
+
 ## Changelog
 
+* **2026-10-31: checkpoints and resume.** The script saves a checkpoint at
+  the end of every epoch, keeps the 2 most recent ones, and resumes from one
+  with `--resume`; see [Checkpoints and resume](#checkpoints-and-resume).
+  `train_model_simple` now returns a `TrainingState` instead of three lists,
+  and `main` accepts the command-line arguments.
 * **2026-10-31: fixed validation sample spread over all the books.** Until
   this change, every periodic evaluation computed the validation loss on the
   first 5 batches of the validation loader. That loader is not shuffled, and
@@ -212,6 +273,14 @@ To free the disk space, delete the folder:
 
 ```bash
 rm -r models/gpt2-small
+```
+
+The training checkpoints are in `models/checkpoints/first_training/`, about
+1.5 GB each. Deleting the folder removes them, and with them the possibility
+to resume that run:
+
+```bash
+rm -r models/checkpoints/first_training
 ```
 
 ## Troubleshooting

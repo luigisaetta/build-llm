@@ -81,7 +81,7 @@ def test_missing_books_report_preparation_command(
     """Missing or empty books directories fail before allocating a model."""
     directory = tmp_path / "missing" if missing_directory else tmp_path
     monkeypatch.setattr(first_training, "BOOKS_DIR", directory)
-    assert first_training.main() == 1
+    assert first_training.main([]) == 1
     error = capsys.readouterr().err
     assert "No .txt books found" in error
     assert "python -m chap4.prepare_books" in error
@@ -104,7 +104,7 @@ def test_tiny_training_reports_final_step(capsys):
     inputs = torch.randint(0, 8, (3, 4))
     loader = DataLoader(TensorDataset(inputs, inputs.roll(-1, dims=1)), batch_size=1)
     optimizer = torch.optim.AdamW(model.parameters(), lr=0.001)
-    training, validation, tokens = train_model_simple(
+    state = train_model_simple(
         model,
         loader,
         loader,
@@ -114,9 +114,9 @@ def test_tiny_training_reports_final_step(capsys):
         eval_freq=10,
         eval_iter=1,
     )
-    assert tokens == [4, 12, 24]
-    assert len(training) == len(validation) == 3
-    assert all(torch.isfinite(torch.tensor(training + validation)))
+    assert state.track_tokens_seen == [4, 12, 24]
+    assert len(state.train_losses) == len(state.val_losses) == 3
+    assert all(torch.isfinite(torch.tensor(state.train_losses + state.val_losses)))
     output = capsys.readouterr().out
     assert "Epoch 2/2" in output
     assert output.count("100%") == 2

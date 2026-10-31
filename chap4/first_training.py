@@ -17,6 +17,12 @@ Run it from the repository root:
 
     python -m chap4.first_training
 
+A checkpoint is saved at the end of every epoch, in CHECKPOINT_DIR. To resume
+an interrupted training from the most recent checkpoint, or from a given one:
+
+    python -m chap4.first_training --resume
+    python -m chap4.first_training --resume PATH/TO/epoch-002.pt
+
 Weight tying: the output head shares its weights with the token embeddings,
 as in the original GPT-2 and unlike the book. The model has about 124M
 parameters instead of about 163M, with the same architecture; see
@@ -28,14 +34,25 @@ training loss keeps going down, while the validation loss stops improving.
 That is expected here.
 """
 
+import argparse
 import sys
 import time
+from collections.abc import Callable
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 import tiktoken
 import torch
 from torch.utils.data import DataLoader
 
+from build_llm.checkpoints import (
+    checkpoint_path,
+    latest_checkpoint,
+    list_checkpoints,
+    load_checkpoint,
+    remove_old_checkpoints,
+    save_checkpoint,
+)
 from build_llm.dataloaders import (
     END_OF_TEXT,
     create_dataloader_v1,
@@ -76,6 +93,16 @@ TIE_EMBEDDINGS = True
 # Load the local .txt books dynamically; split each one independently for validation.
 BOOKS_DIR = Path(__file__).resolve().parent / "books"
 
+# Checkpoints, one at the end of every epoch. They go under models/, which is
+# ignored by Git. With weight tying, a checkpoint holds the weights (about
+# 0.5 GB) and the two AdamW running averages (about 1 GB): about 1.5 GB each.
+CHECKPOINT_DIR = (
+    Path(__file__).resolve().parent.parent / "models" / "checkpoints" / "first_training"
+)
+# The most recent checkpoints to keep; older ones are deleted after each save.
+# Set it to None to keep them all.
+KEEP_CHECKPOINTS: int | None = 2
+
 TRAIN_RATIO = 0.90  # Fraction of each book used for training; the rest validates
 # doubled
 BATCH_SIZE = 4
@@ -93,6 +120,26 @@ EVAL_ITER = 5  # Training batches used for each evaluation
 VAL_SAMPLE_SEQUENCES = 100
 PROMPT_TOKENS = 50  # Tokens of the validation sample used as the prompt
 NEW_TOKENS = 50  # Tokens generated after the prompt
+
+
+@dataclass
+class TrainingState:
+    """Progress of a training run: what a checkpoint needs to continue it.
+
+    Attributes:
+        global_step: Zero-based index of the last optimizer step; -1 before
+            the first one.
+        tokens_seen: Input tokens processed so far.
+        train_losses: Training loss of each evaluation.
+        val_losses: Validation loss of each evaluation.
+        track_tokens_seen: Tokens seen at each evaluation.
+    """
+
+    global_step: int = -1
+    tokens_seen: int = 0
+    train_losses: list[float] = field(default_factory=list)
+    val_losses: list[float] = field(default_factory=list)
+    track_tokens_seen: list[int] = field(default_factory=list)
 
 
 #
@@ -287,7 +334,10 @@ def train_model_simple(  # pylint: disable=too-many-arguments,too-many-locals
     num_epochs: int,
     eval_freq: int,
     eval_iter: int,
-) -> tuple[list[float], list[float], list[int]]:
+    start_epoch: int = 0,
+    state: TrainingState | None = None,
+    on_epoch_end: Callable[[int, TrainingState], None] | None = None,
+) -> TrainingState:
     """Train the model, evaluating it periodically.
 
     Every eval_freq optimizer steps, the training and validation losses are
@@ -305,17 +355,21 @@ def train_model_simple(  # pylint: disable=too-many-arguments,too-many-locals
         num_epochs: Number of passes over the training data.
         eval_freq: Number of optimizer steps between two evaluations.
         eval_iter: Number of batches used for each evaluation.
+        start_epoch: Number of epochs already completed, when resuming from a
+            checkpoint; training continues with the next one.
+        state: The progress restored from a checkpoint; a new one if None.
+        on_epoch_end: Called after each completed epoch with its one-based
+            number and the current state, for example to save a checkpoint.
 
     Returns:
-        The training losses, the validation losses, and the number of tokens
-        seen at each evaluation.
+        The final training state, with the losses of every evaluation.
     """
-    # Initialize lists to track losses and tokens seen
-    train_losses, val_losses, track_tokens_seen = [], [], []
-    tokens_seen, global_step = 0, -1
+    state = TrainingState() if state is None else state
     progress = TrainingProgress()
+    if state.val_losses:  # Resumed: the best validation loss so far is known
+        progress.best_validation = min(state.val_losses)
 
-    for epoch in range(num_epochs):
+    for epoch in range(start_epoch, num_epochs):
         progress.start_epoch(epoch + 1, num_epochs)
         model.train()  # Enable dropout
         epoch_start = time.perf_counter()
@@ -329,46 +383,48 @@ def train_model_simple(  # pylint: disable=too-many-arguments,too-many-locals
             loss.backward()  # Compute the gradients of the loss
             optimizer.step()  # Update the weights using the gradients
 
-            tokens_seen += input_batch.numel()
-            global_step += 1
+            state.tokens_seen += input_batch.numel()
+            state.global_step += 1
 
             # Include the final batch so every epoch reports its completed progress.
-            if global_step % eval_freq == 0 or batch_number == len(train_loader):
+            if state.global_step % eval_freq == 0 or batch_number == len(train_loader):
                 train_loss, val_loss = evaluate_model(
                     model, train_loader, val_loader, device, eval_iter
                 )
-                train_losses.append(train_loss)
-                val_losses.append(val_loss)
-                track_tokens_seen.append(tokens_seen)
+                state.train_losses.append(train_loss)
+                state.val_losses.append(val_loss)
+                state.track_tokens_seen.append(state.tokens_seen)
                 progress.update(
                     batch_number,
                     len(train_loader),
-                    global_step + 1,
+                    state.global_step + 1,
                     train_loss,
                     val_loss,
                 )
 
         synchronize(device)  # Count the steps still running on the GPU
         epoch_seconds = time.perf_counter() - epoch_start
-        progress.finish_epoch(epoch_seconds, train_losses, val_losses)
+        progress.finish_epoch(epoch_seconds, state.train_losses, state.val_losses)
+        if on_epoch_end is not None:
+            on_epoch_end(epoch + 1, state)
 
-    return train_losses, val_losses, track_tokens_seen
+    return state
 
 
 def create_loaders(
-    tokenizer: tiktoken.Encoding, books: list[str], progress: TrainingProgress
+    tokenizer: tiktoken.Encoding, text_paths: list[Path], progress: TrainingProgress
 ) -> tuple[DataLoader, DataLoader, DataLoader]:
-    """Split the books and create the training and validation loaders.
+    """Read and split the books, and create the training and validation loaders.
 
     Each book is split on its own: the first TRAIN_RATIO of every book trains,
     the rest validates. Splitting the concatenated text once would put only
     the end of the last book in the validation set. Inside each set, the books
-    are separated by the GPT-2 end-of-text token. The token and batch counts
-    are printed with progress.
+    are separated by the GPT-2 end-of-text token. The books, and the token and
+    batch counts of each set, are printed with progress.
 
     Args:
         tokenizer: The GPT-2 tokenizer.
-        books: The text of each book.
+        text_paths: The book files.
         progress: The printer of the training summary.
 
     Returns:
@@ -376,6 +432,14 @@ def create_loaders(
         shuffled, used for the final generation), and the fixed validation
         sample used by the periodic evaluations.
     """
+    books = [path.read_text(encoding="utf-8") for path in text_paths]
+    progress.show_books(
+        [
+            (path.name, len(book), len(tokenizer.encode(book)))
+            for path, book in zip(text_paths, books)
+        ]
+    )
+
     train_parts, val_parts = split_document_parts(books, TRAIN_RATIO)
     train_text = END_OF_TEXT.join(train_parts)
     val_text = END_OF_TEXT.join(val_parts)
@@ -429,14 +493,228 @@ def create_loaders(
 
 
 #
-# Main
+# Checkpoints and command line
 #
-def main() -> int:
-    """Train the model on the books, print the progress, then generate text.
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    """Read the command-line options.
+
+    Args:
+        argv: The arguments, without the program name; sys.argv if None.
 
     Returns:
-        The exit code: 0 on success.
+        The options: resume (None, "latest", or a checkpoint path) and
+        checkpoint_dir.
     """
+    parser = argparse.ArgumentParser(
+        description="Train a GPT-2 Small-sized model on the books in chap4/books.",
+    )
+    parser.add_argument(
+        "--resume",
+        nargs="?",
+        const="latest",
+        default=None,
+        metavar="CHECKPOINT",
+        help=(
+            "resume from a checkpoint: the most recent one in --checkpoint-dir "
+            "if no path is given"
+        ),
+    )
+    parser.add_argument(
+        "--checkpoint-dir",
+        type=Path,
+        default=CHECKPOINT_DIR,
+        help=f"folder of the checkpoints of this run (default: {CHECKPOINT_DIR})",
+    )
+    return parser.parse_args(argv)
+
+
+def training_settings(text_paths: list[Path]) -> dict:
+    """Collect the settings that must not change when a training resumes.
+
+    The model configuration must match the saved weights. The batch size, the
+    split, and the books decide the batches of every epoch, and the learning
+    rate and weight decay are stored in the optimizer state: changing them in
+    the middle of a run would make it a different training. NUM_EPOCHS is not
+    included, so a finished run can be extended with more epochs.
+
+    Args:
+        text_paths: The book files used for training.
+
+    Returns:
+        The settings, made of plain values that a checkpoint can store.
+    """
+    return {
+        "model_config": dict(GPT_CONFIG_SMALL_256),
+        "tie_embeddings": TIE_EMBEDDINGS,
+        "batch_size": BATCH_SIZE,
+        "train_ratio": TRAIN_RATIO,
+        "learning_rate": LEARNING_RATE,
+        "weight_decay": WEIGHT_DECAY,
+        # File names and sizes: a cheap fingerprint of the corpus
+        "books": [f"{path.name}:{path.stat().st_size}" for path in text_paths],
+    }
+
+
+def find_resume_checkpoint(resume: str, checkpoint_dir: Path) -> Path:
+    """Resolve the --resume option to a checkpoint file.
+
+    Args:
+        resume: "latest", or the path of a checkpoint.
+        checkpoint_dir: The folder searched for the latest checkpoint.
+
+    Returns:
+        The checkpoint path.
+
+    Raises:
+        FileNotFoundError: If there is no checkpoint to resume from.
+    """
+    if resume == "latest":
+        path = latest_checkpoint(checkpoint_dir)
+        if path is None:
+            raise FileNotFoundError(f"No checkpoint found in {checkpoint_dir}.")
+        return path
+    path = Path(resume)
+    if not path.is_file():
+        raise FileNotFoundError(f"Checkpoint not found: {path}")
+    return path
+
+
+def make_checkpoint_saver(  # pylint: disable=too-many-arguments
+    checkpoint_dir: Path,
+    *,
+    model: GPTModel,
+    optimizer: torch.optim.Optimizer,
+    device: torch.device,
+    settings: dict,
+    keep: int | None,
+) -> Callable[[int, TrainingState], None]:
+    """Return the function that saves a checkpoint at the end of an epoch.
+
+    Args:
+        checkpoint_dir: Folder of the checkpoints of this run.
+        model: The model being trained.
+        optimizer: Its optimizer.
+        device: The device of the model.
+        settings: The settings of this run, stored for check_settings.
+        keep: Number of most recent checkpoints to keep; None keeps them all.
+
+    Returns:
+        A function of the epoch number and the training state, for the
+        on_epoch_end argument of train_model_simple.
+    """
+
+    def save(epoch: int, state: TrainingState) -> None:
+        path = checkpoint_path(checkpoint_dir, epoch)
+        save_checkpoint(
+            path,
+            model=model,
+            optimizer=optimizer,
+            epoch=epoch,
+            device=device,
+            training_state=asdict(state),
+            settings=settings,
+        )
+        print(f"  Checkpoint saved: {path}", flush=True)
+        if keep is not None:
+            for old in remove_old_checkpoints(checkpoint_dir, keep):
+                print(f"  Old checkpoint removed: {old.name}", flush=True)
+
+    return save
+
+
+def resume_training(
+    args: argparse.Namespace,
+    *,
+    model: GPTModel,
+    optimizer: torch.optim.Optimizer,
+    device: torch.device,
+    settings: dict,
+) -> tuple[int, TrainingState, str]:
+    """Restore a checkpoint chosen with --resume into the model and optimizer.
+
+    Args:
+        args: The command-line options.
+        model: The model, already on device.
+        optimizer: Its optimizer.
+        device: The device of the model.
+        settings: The settings of this run, compared with the saved ones.
+
+    Returns:
+        The number of completed epochs, the restored training state, and a
+        description for the summary.
+
+    Raises:
+        FileNotFoundError: If there is no checkpoint to resume from.
+        ValueError: If the checkpoint was saved with different settings.
+    """
+    path = find_resume_checkpoint(args.resume, args.checkpoint_dir)
+    restored = load_checkpoint(
+        path,
+        model=model,
+        optimizer=optimizer,
+        device=device,
+        expected_settings=settings,
+    )
+    epoch = restored["epoch"]
+    state = TrainingState(**restored["training_state"])
+    return epoch, state, f"resumed from {path.name} | epoch {epoch} done"
+
+
+def show_summary(
+    progress: TrainingProgress,
+    device: torch.device,
+    model: GPTModel,
+    start: str,
+    checkpoint_dir: Path,
+) -> None:
+    """Print the title and the configuration of the run.
+
+    Args:
+        progress: The printer of the training summary.
+        device: The device of the model.
+        model: The model, to show its parameter count.
+        start: How the run starts: new, or resumed from a checkpoint.
+        checkpoint_dir: Folder of the checkpoints of this run.
+    """
+    tying = "weight tying" if TIE_EMBEDDINGS else "separate output head"
+    progress.start_demo(
+        "A First GPT Training Run",
+        [
+            ("Device", str(device)),
+            ("Model", f"GPT-2 Small | {tying}"),
+            ("Parameters", f"{count_parameters(model):,}"),
+            ("Start", start),
+            ("Training", f"{NUM_EPOCHS} epochs | batch size {BATCH_SIZE}"),
+            ("Context", f"{GPT_CONFIG_SMALL_256['context_length']} tokens"),
+            ("Learning rate", f"{LEARNING_RATE:g}"),
+            (
+                "Split per book",
+                f"{TRAIN_RATIO:.0%} training / {1 - TRAIN_RATIO:.0%} validation",
+            ),
+            ("Checkpoints", str(checkpoint_dir)),
+        ],
+    )
+
+
+#
+# Main
+#
+# main only runs the steps, in order; each step is a function above.
+def main(argv: list[str] | None = None) -> int:  # pylint: disable=too-many-locals
+    """Train the model on the books, print the progress, then generate text.
+
+    A new run refuses to start if the checkpoint folder already holds
+    checkpoints, so that it never overwrites another run: resume it with
+    --resume, or choose another --checkpoint-dir.
+
+    Args:
+        argv: The command-line arguments; sys.argv if None.
+
+    Returns:
+        The exit code: 0 on success, 1 if the books or the checkpoint to
+        resume from are missing or do not match.
+    """
+    args = parse_args(argv)
     text_paths = find_book_paths()
     if not text_paths:
         print(
@@ -445,58 +723,70 @@ def main() -> int:
             file=sys.stderr,
         )
         return 1
+    if args.resume is None and list_checkpoints(args.checkpoint_dir):
+        print(
+            f"{args.checkpoint_dir} already holds checkpoints of another run. "
+            "Resume it with --resume, or choose another --checkpoint-dir.",
+            file=sys.stderr,
+        )
+        return 1
+
     torch.manual_seed(123)  # Same initial weights and batch order at every run
     device = get_device()
 
     # The model is created before the summary, to show its parameter count
     model = GPTModel(GPT_CONFIG_SMALL_256, tie_embeddings=TIE_EMBEDDINGS)
-    tying = "weight tying" if TIE_EMBEDDINGS else "separate output head"
-
-    progress = TrainingProgress()
-    progress.start_demo(
-        "A First GPT Training Run",
-        [
-            ("Device", str(device)),
-            ("Model", f"GPT-2 Small | random weights | {tying}"),
-            ("Parameters", f"{count_parameters(model):,}"),
-            ("Training", f"{NUM_EPOCHS} epochs | batch size {BATCH_SIZE}"),
-            ("Context", f"{GPT_CONFIG_SMALL_256['context_length']} tokens"),
-            ("Learning rate", f"{LEARNING_RATE:g}"),
-            (
-                "Split per book",
-                f"{TRAIN_RATIO:.0%} training / {1 - TRAIN_RATIO:.0%} validation",
-            ),
-        ],
-    )
-
     model.to(device)
     optimizer = torch.optim.AdamW(
         model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY
     )
+    settings = training_settings(text_paths)
+
+    # Resume: restore weights, optimizer, generators, and progress
+    start_epoch, state, start = 0, TrainingState(), "new run | random weights"
+    if args.resume is not None:
+        try:
+            start_epoch, state, start = resume_training(
+                args, model=model, optimizer=optimizer, device=device, settings=settings
+            )
+        except (FileNotFoundError, ValueError) as error:
+            print(f"Cannot resume: {error}", file=sys.stderr)
+            return 1
+
+    progress = TrainingProgress()
+    show_summary(progress, device, model, start, args.checkpoint_dir)
+
     tokenizer = tiktoken.get_encoding("gpt2")
-
-    books = [path.read_text(encoding="utf-8") for path in text_paths]
-    progress.show_books(
-        [
-            (path.name, len(book), len(tokenizer.encode(book)))
-            for path, book in zip(text_paths, books)
-        ]
-    )
-
     train_loader, val_loader, val_sample_loader = create_loaders(
-        tokenizer, books, progress
+        tokenizer, text_paths, progress
     )
 
-    train_model_simple(
-        model,
-        train_loader,
-        val_sample_loader,
-        optimizer,
-        device,
-        num_epochs=NUM_EPOCHS,
-        eval_freq=EVAL_FREQ,
-        eval_iter=EVAL_ITER,
-    )
+    if start_epoch >= NUM_EPOCHS:
+        print(
+            f"All {NUM_EPOCHS} epochs are already done: no training. "
+            "Raise NUM_EPOCHS to train more."
+        )
+    else:
+        train_model_simple(
+            model,
+            train_loader,
+            val_sample_loader,
+            optimizer,
+            device,
+            num_epochs=NUM_EPOCHS,
+            eval_freq=EVAL_FREQ,
+            eval_iter=EVAL_ITER,
+            start_epoch=start_epoch,
+            state=state,
+            on_epoch_end=make_checkpoint_saver(
+                args.checkpoint_dir,
+                model=model,
+                optimizer=optimizer,
+                device=device,
+                settings=settings,
+                keep=KEEP_CHECKPOINTS,
+            ),
+        )
 
     print("")
     generate_from_validation_sample(
